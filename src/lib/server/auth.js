@@ -4,12 +4,55 @@ import { db } from './db';
 import * as schema from './db/schema';
 import { env } from '$env/dynamic/private';
 import { emailOTP } from 'better-auth/plugins';
+import { eq } from 'drizzle-orm';
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: 'sqlite',
 		schema: schema
 	}),
+	hooks: {
+		before: async (ctx) => {
+			if (ctx.path.includes('sign-in')) {
+				// We don't have the user yet in 'before' sign-in usually without more logic, 
+				// but Better-Auth allows session hooks.
+			}
+		}
+	},
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (user) => {
+					const regSetting = await db
+						.select()
+						.from(schema.config)
+						.where(eq(schema.config.key, 'registration_enabled'))
+						.get();
+
+					if (regSetting?.value !== 'true') {
+						throw new Error('Η εγγραφή νέων χρηστών είναι προσωρινά απενεργοποιημένη.');
+					}
+					return user;
+				}
+			}
+		},
+		session: {
+			create: {
+				before: async (session) => {
+					const targetUser = await db
+						.select()
+						.from(schema.user)
+						.where(eq(schema.user.id, session.userId))
+						.get();
+
+					if (targetUser?.role === 'ban') {
+						throw new Error('Ο λογαριασμός σας έχει απενεργοποιηθεί (Ban).');
+					}
+					return session;
+				}
+			}
+		}
+	},
 	emailAndPassword: {
 		enabled: true
 	},
@@ -18,7 +61,11 @@ export const auth = betterAuth({
 			role: {
 				type: 'string',
 				required: false,
-				defaultValue: 'user'
+				defaultValue: 'player'
+			},
+			username: {
+				type: 'string',
+				required: false
 			}
 		}
 	},

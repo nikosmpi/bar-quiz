@@ -1,4 +1,4 @@
-import { createAuthClient } from 'better-auth/client';
+import { createAuthClient } from 'better-auth/svelte';
 import { emailOTPClient } from 'better-auth/client/plugins';
 import { env } from '$env/dynamic/public';
 
