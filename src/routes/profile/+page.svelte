@@ -10,6 +10,8 @@
 	let message = $state({ type: '', text: '' });
 	let fileInput;
 
+	const initial = $derived((username || user.name || '?').charAt(0).toUpperCase());
+
 	async function updateProfile() {
 		loading = true;
 		message = { type: '', text: '' };
@@ -64,7 +66,7 @@
 				{#if image}
 					<img src={image} alt={user.name} class="avatar" />
 				{:else}
-					<div class="avatar-placeholder">{user.name.charAt(0).toUpperCase()}</div>
+					<div class="avatar-placeholder">{initial}</div>
 				{/if}
 				<div class="avatar-overlay">
 					<span>Αλλαγή</span>

@@ -75,5 +75,34 @@ export const actions = {
 			console.error('Failed to toggle registration:', error);
 			return fail(500, { message: 'Database error' });
 		}
+	},
+
+	deleteUser: async ({ request }) => {
+		const session = await auth.api.getSession({
+			headers: request.headers
+		});
+
+		if (!session || session.user.role !== 'admin') {
+			return fail(403, { message: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const userId = formData.get('userId');
+
+		// Double check on server: don't allow deleting admins
+		const targetUser = await db.select().from(user).where(eq(user.id, userId)).get();
+		if (targetUser?.role === 'admin') {
+			return fail(400, { message: 'Δεν επιτρέπεται η διαγραφή διαχειριστών.' });
+		}
+
+		try {
+			// Delete user - Drizzle with better-sqlite3 will handle cascaded deletes if configured, 
+			// but Better-Auth tables have some FKs.
+			await db.delete(user).where(eq(user.id, userId));
+			return { success: true };
+		} catch (error) {
+			console.error('Failed to delete user:', error);
+			return fail(500, { message: 'Database error' });
+		}
 	}
 };

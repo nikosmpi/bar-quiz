@@ -30,14 +30,25 @@
 		<table>
 			<thead>
 				<tr>
+					<th>Avatar</th>
 					<th>Email / Username</th>
 					<th>Τρέχων Ρόλος</th>
 					<th>Αλλαγή Ρόλου</th>
+					<th>Ενέργειες</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each users as u}
 					<tr>
+						<td>
+							{#if u.image}
+								<img src={u.image} alt={u.username || u.name} class="table-avatar" />
+							{:else}
+								<div class="table-avatar-placeholder">
+									{(u.username || u.name || u.email || '?').charAt(0).toUpperCase()}
+								</div>
+							{/if}
+						</td>
 						<td>
 							<div class="user-info">
 								<span class="email">{u.email}</span>
@@ -71,6 +82,29 @@
 								</select>
 								<button type="submit" disabled={loadingId === u.id}>
 									{loadingId === u.id ? '...' : 'Αλλαγή'}
+								</button>
+							</form>
+						</td>
+						<td>
+							<form 
+								method="POST" 
+								action="?/deleteUser" 
+								use:enhance={() => {
+									if (!confirm(`Είστε σίγουροι ότι θέλετε να διαγράψετε τον χρήστη ${u.email};`)) return;
+									loadingId = u.id;
+									return async ({ update }) => {
+										await update();
+										loadingId = null;
+									};
+								}}
+							>
+								<input type="hidden" name="userId" value={u.id} />
+								<button 
+									type="submit" 
+									class="delete-btn" 
+									disabled={u.role === 'admin' || loadingId === u.id}
+								>
+									Διαγραφή
 								</button>
 							</form>
 						</td>
@@ -182,6 +216,20 @@
 		color: #6b7280;
 	}
 
+	.table-avatar, .table-avatar-placeholder {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #007bff;
+		color: white;
+		font-weight: bold;
+		font-size: 1rem;
+	}
+
 	.badge {
 		padding: 0.25rem 0.75rem;
 		border-radius: 9999px;
@@ -226,6 +274,29 @@
 
 	button:disabled {
 		background: #9ca3af;
+		cursor: not-allowed;
+	}
+
+	.delete-btn {
+		padding: 0.4rem 0.8rem;
+		background: #ef4444;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		font-weight: 600;
+		transition: background 0.2s;
+	}
+
+	.delete-btn:hover:not(:disabled) {
+		background: #dc2626;
+	}
+
+	.delete-btn:disabled {
+		background: #f3f4f6;
+		color: #9ca3af;
+		border: 1px solid #e5e7eb;
 		cursor: not-allowed;
 	}
 
