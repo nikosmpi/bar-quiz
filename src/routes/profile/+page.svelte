@@ -62,7 +62,7 @@
 
 			if (!response.ok) {
 				const err = await response.json();
-				throw new Error(err.message || 'Αποτυχία ανεβάσματος εικόνας');
+				throw new Error(err.error || err.message || 'Αποτυχία ανεβάσματος εικόνας');
 			}
 
 			const result = await response.json();

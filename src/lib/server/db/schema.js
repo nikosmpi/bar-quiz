@@ -76,7 +76,8 @@ export const question = sqliteTable('question', {
 		.notNull()
 		.references(() => quiz.id, { onDelete: 'cascade' }),
 	text: text('text').notNull(),
-	imageUrl: text('image_url'),
+	mediaType: text('media_type').notNull().default('none'), // 'none', 'image', 'video'
+	mediaUrl: text('media_url'),
 	points: integer('points').notNull().default(1),
 	timeLimit: integer('time_limit').notNull().default(30), // in seconds
 	order: integer('order').notNull().default(0),

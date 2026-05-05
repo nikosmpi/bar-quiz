@@ -116,6 +116,40 @@ export const actions = {
 		return { success: true };
 	},
 
+	reorderQuestion: async ({ params, request }) => {
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session) return fail(401);
+
+		const formData = await request.formData();
+		const questionId = formData.get('questionId')?.toString();
+		const direction = formData.get('direction')?.toString(); // 'up' or 'down'
+
+		if (!questionId || !direction) return fail(400);
+
+		// Fetch all questions for this quiz and sort by current order
+		let questions = await db.select().from(question)
+			.where(eq(question.quizId, params.id))
+			.orderBy(asc(question.order));
+
+		const index = questions.findIndex(q => q.id === questionId);
+		if (index === -1) return fail(404);
+
+		const newIndex = direction === 'up' ? index - 1 : index + 1;
+		if (newIndex < 0 || newIndex >= questions.length) return { success: true };
+
+		// Swap the elements in the array
+		[questions[index], questions[newIndex]] = [questions[newIndex], questions[index]];
+
+		// Update all questions with a clean, sequential order to fix any potential DB corruption
+		for (let i = 0; i < questions.length; i++) {
+			await db.update(question)
+				.set({ order: i })
+				.where(eq(question.id, questions[i].id));
+		}
+
+		return { success: true };
+	},
+
 	updateQuestion: async ({ request }) => {
 		const formData = await request.formData();
 		const questionId = formData.get('questionId')?.toString();

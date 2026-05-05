@@ -3,13 +3,71 @@
 	let { data, form } = $props();
 
 	let loading = $state(false);
-	let editingQuestionId = $state(null);
+	let uploading = $state(false);
+	
+	// Local state for form fields to prevent resets on re-renders
+	let quizName = $state(data.quiz.name);
+	let quizIntro = $state(data.quiz.introText || '');
+	let featuredImageUrl = $state(data.quiz.featuredImage || '');
 
-	function toggleEdit(id) {
-		if (editingQuestionId === id) {
-			editingQuestionId = null;
-		} else {
-			editingQuestionId = id;
+	// Keep local state in sync with server data when it updates (e.g. after save)
+	$effect(() => {
+		quizName = data.quiz.name;
+		quizIntro = data.quiz.introText || '';
+		featuredImageUrl = data.quiz.featuredImage || '';
+	});
+
+	async function deleteFile(url) {
+		if (!url || !url.startsWith('/uploads/')) return;
+		try {
+			await fetch('/api/upload', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ url })
+			});
+		} catch (err) {
+			console.error('Failed to delete file:', err);
+		}
+	}
+
+	async function handleImageUpload(event) {
+		const file = event.target.files[0];
+		if (!file) return;
+
+		uploading = true;
+		const formData = new FormData();
+		formData.append('file', file);
+
+		try {
+			const response = await fetch('/api/upload', {
+				method: 'POST',
+				body: formData
+			});
+			const result = await response.json();
+			if (result.success) {
+				// If we had a temporary image (different from saved one), delete it
+				if (featuredImageUrl && featuredImageUrl !== data.quiz.featuredImage) {
+					await deleteFile(featuredImageUrl);
+				}
+				featuredImageUrl = result.url;
+			} else {
+				alert(result.error || 'Σφάλμα στο ανέβασμα');
+			}
+		} catch (error) {
+			console.error(error);
+			alert('Αποτυχία ανεβάσματος εικόνας');
+		} finally {
+			uploading = false;
+		}
+	}
+
+	async function removeImage() {
+		if (featuredImageUrl) {
+			// If it's a temporary upload, delete it from server immediately
+			if (featuredImageUrl !== data.quiz.featuredImage) {
+				await deleteFile(featuredImageUrl);
+			}
+			featuredImageUrl = '';
 		}
 	}
 </script>
@@ -28,25 +86,34 @@
 				<form method="POST" action="?/updateQuizInfo" use:enhance class="quiz-info-form">
 					<div class="field">
 						<label for="quiz-name">Όνομα Quiz</label>
-						<input type="text" id="quiz-name" name="name" value={data.quiz.name} required />
+						<input type="text" id="quiz-name" name="name" bind:value={quizName} required />
 					</div>
 
 					<div class="field">
-						<label for="quiz-image">URL Χαρακτηριστικής Εικόνας</label>
-						<input type="text" id="quiz-image" name="featuredImage" value={data.quiz.featuredImage || ''} placeholder="https://..." />
-						{#if data.quiz.featuredImage}
+						<label for="quiz-image-file">Χαρακτηριστική Εικόνα</label>
+						<input type="file" id="quiz-image-file" accept="image/*" onchange={handleImageUpload} disabled={uploading} />
+						<input type="hidden" name="featuredImage" value={featuredImageUrl} />
+						
+						{#if uploading}
+							<p class="upload-status">Ανέβασμα και μετατροπή...</p>
+						{/if}
+
+						{#if featuredImageUrl}
 							<div class="image-preview">
-								<img src={data.quiz.featuredImage} alt="Preview" />
+								<img src={featuredImageUrl} alt="Preview" />
+								<button type="button" class="remove-img" onclick={removeImage}>Αφαίρεση</button>
 							</div>
 						{/if}
 					</div>
 
 					<div class="field">
 						<label for="quiz-intro">Εισαγωγικό Κείμενο</label>
-						<textarea id="quiz-intro" name="introText" rows="5" value={data.quiz.introText || ''}></textarea>
+						<textarea id="quiz-intro" name="introText" rows="5" bind:value={quizIntro}></textarea>
 					</div>
 
-					<button type="submit" class="save-info-btn">Αποθήκευση Πληροφοριών</button>
+					<button type="submit" class="save-info-btn" disabled={uploading}>
+						{loading ? 'Αποθήκευση...' : 'Αποθήκευση Πληροφοριών'}
+					</button>
 				</form>
 				
 				<hr class="separator" />
@@ -89,78 +156,41 @@
 				{#if data.questions.length === 0}
 					<p class="empty">Δεν υπάρχουν ακόμα ερωτήσεις.</p>
 				{:else}
-					{#each data.questions as q (q.id)}
-						<div class="question-card" class:editing={editingQuestionId === q.id}>
-							{#if editingQuestionId === q.id}
-								<form method="POST" action="?/updateQuestion" use:enhance={() => {
-									loading = true;
-									return async ({ update }) => {
-										await update();
-										loading = false;
-										editingQuestionId = null;
-									};
-								}} class="edit-question-form">
-									<input type="hidden" name="questionId" value={q.id} />
-									
-									<div class="field">
-										<label>Ερώτηση:</label>
-										<input type="text" name="text" value={q.text} required />
-									</div>
-
-									<div class="meta-fields">
-										<div class="field">
-											<label>Πόντοι:</label>
-											<input type="number" name="points" value={q.points} min="1" />
-										</div>
-										<div class="field">
-											<label>Χρόνος (sec):</label>
-											<input type="number" name="timeLimit" value={q.timeLimit} min="5" />
-										</div>
-									</div>
-
-									<div class="options-grid">
-										<label class="options-label">Επιλογές (επιλέξτε τη σωστή):</label>
-										{#each q.options as opt}
-											<div class="option-row">
-												<input type="radio" name="correctOption" value={opt.id} checked={opt.isCorrect} required />
-												<input type="hidden" name="optionId" value={opt.id} />
-												<input type="text" name="optionText" value={opt.text} required />
-											</div>
-										{/each}
-									</div>
-
-									<div class="form-actions">
-										<button type="button" class="cancel-btn" onclick={() => toggleEdit(null)}>Ακύρωση</button>
-										<button type="submit" class="save-btn" disabled={loading}>Αποθήκευση</button>
-									</div>
-								</form>
-							{:else}
-								<div class="question-view">
-									<div class="q-header">
-										<span class="q-text">{q.text}</span>
-										<div class="q-meta">
-											<span class="badge">{q.points} pts</span>
-											<span class="badge">{q.timeLimit}s</span>
-										</div>
-									</div>
-									<div class="q-options">
-										{#each q.options as opt}
-											<div class="opt" class:correct={opt.isCorrect}>
-												{opt.text} {opt.isCorrect ? '✓' : ''}
-											</div>
-										{/each}
-									</div>
-									<div class="q-actions">
-										<button class="edit-btn" onclick={() => toggleEdit(q.id)}>Επεξεργασία</button>
-										<form method="POST" action="?/deleteQuestion" use:enhance>
-											<input type="hidden" name="questionId" value={q.id} />
-											<button type="submit" class="delete-btn" onclick={(e) => { if(!confirm('Διαγραφή ερώτησης;')) e.preventDefault(); }}>Διαγραφή</button>
-										</form>
+					<div class="questions-grid">
+						{#each data.questions as q, i (q.id)}
+							<div class="question-row-card">
+								<div class="reorder-actions">
+									<form method="POST" action="?/reorderQuestion" use:enhance>
+										<input type="hidden" name="questionId" value={q.id} />
+										<input type="hidden" name="direction" value="up" />
+										<button type="submit" class="order-btn" disabled={i === 0} title="Μετακίνηση πάνω">▲</button>
+									</form>
+									<form method="POST" action="?/reorderQuestion" use:enhance>
+										<input type="hidden" name="questionId" value={q.id} />
+										<input type="hidden" name="direction" value="down" />
+										<button type="submit" class="order-btn" disabled={i === data.questions.length - 1} title="Μετακίνηση κάτω">▼</button>
+									</form>
+								</div>
+								<div class="q-info">
+									<span class="q-text">{q.text}</span>
+									<div class="q-meta">
+										<span class="badge">{q.points} pts</span>
+										<span class="badge">{q.timeLimit}s</span>
+										<span class="badge">{q.options.length} επιλογές</span>
 									</div>
 								</div>
-							{/if}
-						</div>
-					{/each}
+								<div class="q-actions">
+									<a href="/quizmaster/quiz/{data.quiz.id}/question/{q.id}" class="edit-link-btn">Επεξεργασία</a>
+									<form method="POST" action="?/deleteQuestion" use:enhance>
+										<input type="hidden" name="questionId" value={q.id} />
+										<button type="submit" class="delete-icon-btn" onclick={(e) => { if(!confirm('Διαγραφή ερώτησης;')) e.preventDefault(); }} title="Διαγραφή">
+											✕
+										</button>
+									</form>
+								</div>
+							</div>
+						{/each}
+					</div>
 				{/if}
 			</section>
 		</main>
@@ -246,11 +276,18 @@
 		font-family: inherit;
 	}
 
+	.upload-status {
+		font-size: 0.8rem;
+		color: #2563eb;
+		margin: 0;
+	}
+
 	.image-preview {
 		margin-top: 0.5rem;
 		border-radius: 4px;
 		overflow: hidden;
 		border: 1px solid #e5e7eb;
+		position: relative;
 	}
 
 	.image-preview img {
@@ -258,6 +295,19 @@
 		display: block;
 		max-height: 150px;
 		object-fit: cover;
+	}
+
+	.remove-img {
+		position: absolute;
+		top: 5px;
+		right: 5px;
+		background: rgba(239, 68, 68, 0.9);
+		color: white;
+		border: none;
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		cursor: pointer;
 	}
 
 	.save-info-btn {
@@ -269,6 +319,11 @@
 		font-weight: 600;
 		cursor: pointer;
 		margin-top: 0.5rem;
+	}
+
+	.save-info-btn:disabled {
+		background: #9ca3af;
+		cursor: not-allowed;
 	}
 
 	.separator {
@@ -330,31 +385,64 @@
 		cursor: pointer;
 	}
 
-	.question-card {
+	.questions-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.question-row-card {
 		background: white;
 		border: 1px solid #e5e7eb;
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 1rem;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-	}
-
-	.question-card.editing {
-		border-color: #2563eb;
-		box-shadow: 0 0 0 2px #bfdbfe;
-	}
-
-	.q-header {
+		border-radius: 10px;
+		padding: 1rem 1.5rem;
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 1rem;
+		align-items: center;
+		transition: box-shadow 0.2s;
+		gap: 1rem;
+	}
+
+	.question-row-card:hover {
+		box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+	}
+
+	.reorder-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.order-btn {
+		background: #f3f4f6;
+		border: 1px solid #e5e7eb;
+		border-radius: 4px;
+		padding: 2px 8px;
+		font-size: 0.7rem;
+		cursor: pointer;
+		color: #4b5563;
+		transition: all 0.2s;
+	}
+
+	.order-btn:hover:not(:disabled) {
+		background: #e5e7eb;
+		color: #111827;
+	}
+
+	.order-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+
+	.q-info {
+		flex: 1;
 	}
 
 	.q-text {
-		font-size: 1.1rem;
 		font-weight: 600;
 		color: #111827;
+		display: block;
+		margin-bottom: 0.25rem;
 	}
 
 	.badge {
@@ -363,118 +451,37 @@
 		border-radius: 4px;
 		font-size: 0.75rem;
 		color: #4b5563;
-		margin-left: 0.5rem;
-	}
-
-	.q-options {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	.opt {
-		padding: 0.5rem;
-		background: #f9fafb;
-		border-radius: 4px;
-		font-size: 0.9rem;
-	}
-
-	.opt.correct {
-		background: #d1fae5;
-		color: #065f46;
-		font-weight: 600;
+		margin-right: 0.5rem;
 	}
 
 	.q-actions {
 		display: flex;
-		gap: 0.5rem;
-		justify-content: flex-end;
-		border-top: 1px solid #f3f4f6;
-		padding-top: 1rem;
-	}
-
-	.edit-btn {
-		background: #f3f4f6;
-		border: none;
-		padding: 0.4rem 1rem;
-		border-radius: 4px;
-		cursor: pointer;
-	}
-
-	.delete-btn {
-		background: #fee2e2;
-		color: #dc2626;
-		border: none;
-		padding: 0.4rem 1rem;
-		border-radius: 4px;
-		cursor: pointer;
-	}
-
-	/* Edit Form Styles (Internal) */
-	.edit-question-form {
-		display: flex;
-		flex-direction: column;
 		gap: 1rem;
-	}
-
-	.meta-fields {
-		display: flex;
-		gap: 1rem;
-	}
-
-	.meta-fields .field {
-		flex: 1;
-	}
-
-	.options-grid {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.options-label {
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: #4b5563;
-		margin-bottom: 0.5rem;
-	}
-
-	.option-row {
-		display: flex;
-		gap: 0.5rem;
 		align-items: center;
 	}
 
-	.option-row input[type="text"] {
-		flex: 1;
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 4px;
-	}
-
-	.form-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 1rem;
-		margin-top: 1rem;
-	}
-
-	.save-btn {
-		background: #2563eb;
-		color: white;
-		border: none;
-		padding: 0.6rem 1.5rem;
-		border-radius: 6px;
+	.edit-link-btn {
+		color: #2563eb;
+		text-decoration: none;
 		font-weight: 600;
-		cursor: pointer;
+		font-size: 0.9rem;
 	}
 
-	.cancel-btn {
-		background: white;
-		border: 1px solid #d1d5db;
-		padding: 0.6rem 1.5rem;
-		border-radius: 6px;
+	.edit-link-btn:hover {
+		text-decoration: underline;
+	}
+
+	.delete-icon-btn {
+		background: none;
+		border: none;
+		color: #9ca3af;
 		cursor: pointer;
+		font-size: 1.2rem;
+		padding: 0.2rem;
+		transition: color 0.2s;
+	}
+
+	.delete-icon-btn:hover {
+		color: #ef4444;
 	}
 </style>
