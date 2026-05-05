@@ -6,9 +6,9 @@
 	let uploading = $state(false);
 	
 	// Local state for form fields to prevent resets on re-renders
-	let quizName = $state(data.quiz.name);
-	let quizIntro = $state(data.quiz.introText || '');
-	let featuredImageUrl = $state(data.quiz.featuredImage || '');
+	let quizName = $state("");
+	let quizIntro = $state("");
+	let featuredImageUrl = $state("");
 
 	// Keep local state in sync with server data when it updates (e.g. after save)
 	$effect(() => {

@@ -3,13 +3,17 @@
 	import UserAvatar from '$lib/components/UserAvatar.svelte';
 	
 	let { data } = $props();
-	const user = data.user;
 	
-	let username = $state(user.username || '');
-	let image = $state(user.image || '');
+	let username = $state(data.user.username || '');
+	let image = $state(data.user.image || '');
 	let loading = $state(false);
 	let message = $state({ type: '', text: '' });
 	let fileInput;
+
+	$effect(() => {
+		username = data.user.username || '';
+		image = data.user.image || '';
+	});
 
 	async function deleteFile(url) {
 		if (!url || !url.startsWith('/uploads/')) return;
@@ -28,7 +32,7 @@
 		loading = true;
 		message = { type: '', text: '' };
 		
-		const oldImage = user.image;
+		const oldImage = data.user.image;
 		const { error } = await authClient.updateUser({
 			username: username,
 			image: image
@@ -68,7 +72,7 @@
 			const result = await response.json();
 			
 			// If we had a temporary image (uploaded in this session but not saved), delete it
-			if (image && image !== user.image) {
+			if (image && image !== data.user.image) {
 				await deleteFile(image);
 			}
 
@@ -83,7 +87,7 @@
 
 	function removeImage() {
 		// If we had a temporary image, delete it immediately
-		if (image && image !== user.image) {
+		if (image && image !== data.user.image) {
 			deleteFile(image);
 		}
 		image = '';
@@ -96,7 +100,7 @@
 		<div class="header">
 			<div class="avatar-section">
 				<div class="avatar-container" onclick={() => fileInput.click()} aria-hidden="true">
-					<UserAvatar user={user} imageUrl={image} size="120px" />
+					<UserAvatar user={data.user} imageUrl={image} size="120px" />
 					<div class="avatar-overlay">
 						<span>Αλλαγή</span>
 					</div>
@@ -136,12 +140,12 @@
 				
 				<div class="info-item">
 					<span class="label">Email:</span>
-					<span class="value">{user.email}</span>
+					<span class="value">{data.user.email}</span>
 				</div>
 				
 				<div class="info-item">
 					<span class="label">Ρόλος:</span>
-					<span class="value badge">{user.role}</span>
+					<span class="value badge">{data.user.role}</span>
 				</div>
 
 				<div class="button-container">

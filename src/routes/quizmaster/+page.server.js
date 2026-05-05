@@ -3,7 +3,6 @@ import { db } from '$lib/server/db';
 import { quiz } from '$lib/server/db/schema';
 import { redirect, fail } from '@sveltejs/kit';
 import { eq, desc } from 'drizzle-orm';
-import { crypto } from 'better-auth/crypto';
 
 export const load = async ({ request }) => {
 	const session = await auth.api.getSession({

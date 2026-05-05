@@ -7,8 +7,13 @@
 	let message = $state(null);
 
 	// Local state for media
-	let mediaType = $state(data.question.mediaType || 'none');
-	let mediaUrl = $state(data.question.mediaUrl || '');
+	let mediaType = $state('none');
+	let mediaUrl = $state('');
+
+	$effect(() => {
+		mediaType = data.question.mediaType || 'none';
+		mediaUrl = data.question.mediaUrl || '';
+	});
 
 	$effect(() => {
 		if (form?.success) {
@@ -148,7 +153,7 @@
 						{#if uploading}<p>Ανέβασμα...</p>{/if}
 						{#if mediaUrl && mediaUrl.startsWith('/uploads/') && mediaUrl.endsWith('.mp4')}
 							<div class="preview">
-								<video src={mediaUrl} controls width="100%"></video>
+								<video src={mediaUrl} controls muted width="100%"></video>
 								<button type="button" class="remove-btn" onclick={() => { deleteFile(mediaUrl); mediaUrl = ''; }}>✕</button>
 							</div>
 						{/if}
