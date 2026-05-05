@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
 		server: {
 			allowedHosts: [
 				env.PUBLIC_SITE_DOMAIN
-			]
+			].filter(Boolean)
 		}
 	};
 });
