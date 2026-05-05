@@ -25,5 +25,6 @@
 
 	main {
 		padding: 1rem;
+		padding-top: 5rem;
 	}
 </style>

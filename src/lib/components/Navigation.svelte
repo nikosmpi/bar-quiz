@@ -66,7 +66,10 @@
 		padding: 1rem 2rem;
 		background: #333;
 		color: white;
-		position: relative;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
 		z-index: 100;
 	}
 
@@ -87,7 +90,7 @@
 		border: none;
 		cursor: pointer;
 		padding: 0;
-		z-index: 101;
+		z-index: 110;
 	}
 
 	.line {
@@ -98,6 +101,10 @@
 		transition: all 0.3s linear;
 		position: relative;
 		transform-origin: 1px;
+	}
+
+	.burger.active .line {
+		background: #333;
 	}
 
 	.burger.active .line:nth-child(1) {
