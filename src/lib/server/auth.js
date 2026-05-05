@@ -25,6 +25,7 @@ export const auth = betterAuth({
 	plugins: [
 		emailOTP({
 			async sendVerificationOTP({ email, otp, type }) {
+				console.log('Using Brevo API Key:', env.BREVO_API_KEY ? 'Present' : 'Missing');
 				const response = await fetch('https://api.brevo.com/v3/smtp/email', {
 					method: 'POST',
 					headers: {
@@ -51,5 +52,6 @@ export const auth = betterAuth({
 			}
 		})
 	],
-	baseURL: env.BETTER_AUTH_URL || 'http://localhost:9106'
+	baseURL: env.BETTER_AUTH_URL || 'http://localhost:9106',
+	trustedOrigins: env.TRUSTED_ORIGINS ? env.TRUSTED_ORIGINS.split(',') : []
 });
