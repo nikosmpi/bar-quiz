@@ -1,5 +1,6 @@
 <script>
 	import { enhance } from '$app/forms';
+	import UserAvatar from '$lib/components/UserAvatar.svelte';
 	let { data, form } = $props();
 	
 	let users = $state(data.users);
@@ -41,13 +42,7 @@
 				{#each users as u}
 					<tr>
 						<td>
-							{#if u.image}
-								<img src={u.image} alt={u.username || u.name} class="table-avatar" />
-							{:else}
-								<div class="table-avatar-placeholder">
-									{(u.username || u.name || u.email || '?').charAt(0).toUpperCase()}
-								</div>
-							{/if}
+							<UserAvatar user={u} size="40px" />
 						</td>
 						<td>
 							<div class="user-info">
@@ -214,20 +209,6 @@
 	.username {
 		font-size: 0.85rem;
 		color: #6b7280;
-	}
-
-	.table-avatar, .table-avatar-placeholder {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		object-fit: cover;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: #007bff;
-		color: white;
-		font-weight: bold;
-		font-size: 1rem;
 	}
 
 	.badge {

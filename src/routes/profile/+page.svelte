@@ -1,5 +1,6 @@
 <script>
 	import { authClient } from '$lib/auth-client';
+	import UserAvatar from '$lib/components/UserAvatar.svelte';
 	
 	let { data } = $props();
 	const user = data.user;
@@ -9,8 +10,6 @@
 	let loading = $state(false);
 	let message = $state({ type: '', text: '' });
 	let fileInput;
-
-	const initial = $derived((username || user.name || '?').charAt(0).toUpperCase());
 
 	async function updateProfile() {
 		loading = true;
@@ -63,11 +62,7 @@
 	<div class="profile-card">
 		<div class="header">
 			<div class="avatar-container" onclick={() => fileInput.click()} aria-hidden="true">
-				{#if image}
-					<img src={image} alt={user.name} class="avatar" />
-				{:else}
-					<div class="avatar-placeholder">{initial}</div>
-				{/if}
+				<UserAvatar user={user} imageUrl={image} size="120px" />
 				<div class="avatar-overlay">
 					<span>Αλλαγή</span>
 				</div>
@@ -150,22 +145,6 @@
 		height: 120px;
 		cursor: pointer;
 		margin-bottom: 1rem;
-	}
-
-	.avatar, .avatar-placeholder {
-		width: 120px;
-		height: 120px;
-		border-radius: 50%;
-		object-fit: cover;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 3rem;
-		font-weight: bold;
-		background: #007bff;
-		color: white;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-		transition: opacity 0.3s;
 	}
 
 	.avatar-overlay {

@@ -1,15 +1,9 @@
 <script>
 	import { authClient } from '$lib/auth-client';
+	import UserAvatar from './UserAvatar.svelte';
 
 	let isOpen = $state(false);
-	let imageError = $state(false);
 	const session = authClient.useSession();
-
-	$effect(() => {
-		if ($session.data?.user?.id) {
-			imageError = false;
-		}
-	});
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -37,18 +31,7 @@
 		<div class="menu-content" class:open={isOpen}>
 			{#if $session.data}
 				<div class="user-header">
-					{#if $session.data.user.image && !imageError}
-						<img
-							src={$session.data.user.image}
-							alt={$session.data.user.name}
-							class="menu-avatar"
-							onerror={() => (imageError = true)}
-						/>
-					{:else}
-						<div class="menu-avatar-placeholder">
-							{($session.data.user.name || $session.data.user.username || 'U').charAt(0).toUpperCase()}
-						</div>
-					{/if}
+					<UserAvatar user={$session.data.user} size="48px" />
 					<div class="user-greeting">
 						<span class="welcome">Καλώς ήρθες,</span>
 						<span class="username">{$session.data.user.username || $session.data.user.name}</span>
@@ -173,21 +156,6 @@
 		align-items: center;
 		gap: 1rem;
 		margin-bottom: 1rem;
-	}
-
-	.menu-avatar, .menu-avatar-placeholder {
-		width: 48px;
-		height: 48px;
-		border-radius: 50%;
-		object-fit: cover;
-		background: #007bff;
-		color: white;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: bold;
-		font-size: 1.2rem;
-		flex-shrink: 0;
 	}
 
 	.welcome {
