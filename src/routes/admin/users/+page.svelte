@@ -3,12 +3,8 @@
 	import UserAvatar from '$lib/components/UserAvatar.svelte';
 	let { data, form } = $props();
 	
-	let users = $state(data.users);
+	let users = $derived(data.users);
 	let loadingId = $state(null);
-
-	$effect(() => {
-		users = data.users;
-	});
 </script>
 
 <div class="admin-container">

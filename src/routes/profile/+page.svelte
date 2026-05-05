@@ -4,8 +4,8 @@
 	
 	let { data } = $props();
 	
-	let username = $state(data.user.username || '');
-	let image = $state(data.user.image || '');
+	let username = $state("");
+	let image = $state("");
 	let loading = $state(false);
 	let message = $state({ type: '', text: '' });
 	let fileInput;

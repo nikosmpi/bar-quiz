@@ -100,5 +100,6 @@ export const auth = betterAuth({
 		})
 	],
 	baseURL: env.BETTER_AUTH_URL || 'http://localhost:9106',
+	secret: env.BETTER_AUTH_SECRET || 'a-very-long-dummy-secret-for-build-purposes-only-123456',
 	trustedOrigins: env.TRUSTED_ORIGINS ? env.TRUSTED_ORIGINS.split(',') : []
 });
