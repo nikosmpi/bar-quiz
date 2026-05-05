@@ -2,6 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { auth } from '$lib/server/auth';
+import sharp from 'sharp';
 
 export const POST = async ({ request }) => {
 	const session = await auth.api.getSession({
@@ -25,26 +26,33 @@ export const POST = async ({ request }) => {
 		throw error(400, 'Invalid file type. Only images are allowed.');
 	}
 
-	// Validate file size (e.g., 2MB limit)
-	const maxSize = 2 * 1024 * 1024;
+	// Validate file size (e.g., 5MB limit now that we process it)
+	const maxSize = 5 * 1024 * 1024;
 	if (file.size > maxSize) {
-		throw error(400, 'File too large. Maximum size is 2MB.');
+		throw error(400, 'File too large. Maximum size is 5MB.');
 	}
 
-	const ext = file.name.split('.').pop();
-	const filename = `${session.user.id}-${Date.now()}.${ext}`;
+	const filename = `${session.user.id}-${Date.now()}.webp`;
 	const filePath = join(process.cwd(), 'static', 'uploads', filename);
 
 	try {
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
-		writeFileSync(filePath, buffer);
+
+		// Process image with sharp: resize to 200x200, crop to square (cover), and convert to webp
+		await sharp(buffer)
+			.resize(200, 200, {
+				fit: 'cover',
+				position: 'center'
+			})
+			.webp()
+			.toFile(filePath);
 
 		return json({
 			url: `/uploads/${filename}`
 		});
 	} catch (err) {
 		console.error('Upload error:', err);
-		throw error(500, 'Failed to save file');
+		throw error(500, 'Failed to process and save image');
 	}
 };
