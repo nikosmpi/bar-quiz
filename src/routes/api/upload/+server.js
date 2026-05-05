@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { writeFileSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { auth } from '$lib/server/auth';
 import sharp from 'sharp';
@@ -54,5 +54,40 @@ export const POST = async ({ request }) => {
 	} catch (err) {
 		console.error('Upload error:', err);
 		throw error(500, 'Failed to process and save image');
+	}
+};
+
+export const DELETE = async ({ request }) => {
+	const session = await auth.api.getSession({
+		headers: request.headers
+	});
+
+	if (!session) {
+		throw error(401, 'Unauthorized');
+	}
+
+	const { url } = await request.json();
+
+	if (!url || !url.startsWith('/uploads/')) {
+		return json({ success: true }); // Ignore external URLs or missing URLs
+	}
+
+	const filename = url.replace('/uploads/', '');
+	
+	// Security check: Ensure the filename starts with the user's ID
+	if (!filename.startsWith(`${session.user.id}-`)) {
+		throw error(403, 'Forbidden: You can only delete your own images');
+	}
+
+	const filePath = join(process.cwd(), 'static', 'uploads', filename);
+
+	try {
+		if (existsSync(filePath)) {
+			unlinkSync(filePath);
+		}
+		return json({ success: true });
+	} catch (err) {
+		console.error('Delete error:', err);
+		throw error(500, 'Failed to delete image file');
 	}
 };
