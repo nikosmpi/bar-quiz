@@ -2,7 +2,14 @@
 	import { authClient } from '$lib/auth-client';
 
 	let isOpen = $state(false);
+	let imageError = $state(false);
 	const session = authClient.useSession();
+
+	$effect(() => {
+		if ($session.data?.user?.id) {
+			imageError = false;
+		}
+	});
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -30,10 +37,17 @@
 		<div class="menu-content" class:open={isOpen}>
 			{#if $session.data}
 				<div class="user-header">
-					{#if $session.data.user.image}
-						<img src={$session.data.user.image} alt={$session.data.user.name} class="menu-avatar" />
+					{#if $session.data.user.image && !imageError}
+						<img
+							src={$session.data.user.image}
+							alt={$session.data.user.name}
+							class="menu-avatar"
+							onerror={() => (imageError = true)}
+						/>
 					{:else}
-						<div class="menu-avatar-placeholder">{$session.data.user.name.charAt(0).toUpperCase()}</div>
+						<div class="menu-avatar-placeholder">
+							{($session.data.user.name || $session.data.user.username || 'U').charAt(0).toUpperCase()}
+						</div>
 					{/if}
 					<div class="user-greeting">
 						<span class="welcome">Καλώς ήρθες,</span>
