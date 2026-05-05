@@ -220,7 +220,7 @@
 	}
 
 	.badge.admin { background: #fee2e2; color: #dc2626; }
-	.badge.gamemaster { background: #fef3c7; color: #d97706; }
+	.badge.quizmaster { background: #fef3c7; color: #d97706; }
 	.badge.player { background: #dcfce7; color: #16a34a; }
 	.badge.ban { background: #111827; color: white; }
 

@@ -56,3 +56,40 @@ export const config = sqliteTable('config', {
 	key: text('key').primaryKey(),
 	value: text('value').notNull()
 });
+
+export const quiz = sqliteTable('quiz', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	description: text('description'),
+	introText: text('intro_text'),
+	featuredImage: text('featured_image'),
+	ownerId: text('owner_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const question = sqliteTable('question', {
+	id: text('id').primaryKey(),
+	quizId: text('quiz_id')
+		.notNull()
+		.references(() => quiz.id, { onDelete: 'cascade' }),
+	text: text('text').notNull(),
+	imageUrl: text('image_url'),
+	points: integer('points').notNull().default(1),
+	timeLimit: integer('time_limit').notNull().default(30), // in seconds
+	order: integer('order').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const option = sqliteTable('option', {
+	id: text('id').primaryKey(),
+	questionId: text('question_id')
+		.notNull()
+		.references(() => question.id, { onDelete: 'cascade' }),
+	text: text('text').notNull(),
+	isCorrect: integer('is_correct', { mode: 'boolean' }).notNull().default(false),
+	order: integer('order').notNull().default(0)
+});

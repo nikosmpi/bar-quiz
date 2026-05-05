@@ -1,93 +1,37 @@
-import { error, json } from '@sveltejs/kit';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
-import { join } from 'path';
-import { auth } from '$lib/server/auth';
+import { json } from '@sveltejs/kit';
 import sharp from 'sharp';
+import { writeFile } from 'fs/promises';
+import path from 'path';
+import { auth } from '$lib/server/auth';
 
 export const POST = async ({ request }) => {
-	const session = await auth.api.getSession({
-		headers: request.headers
-	});
-
-	if (!session) {
-		throw error(401, 'Unauthorized');
+	const session = await auth.api.getSession({ headers: request.headers });
+	if (!session || (session.user.role !== 'admin' && session.user.role !== 'quizmaster')) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
-
-	const formData = await request.formData();
-	const file = formData.get('image');
-
-	if (!file || !(file instanceof File)) {
-		throw error(400, 'No file uploaded');
-	}
-
-	// Validate file type
-	const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-	if (!allowedTypes.includes(file.type)) {
-		throw error(400, 'Invalid file type. Only images are allowed.');
-	}
-
-	// Validate file size (e.g., 5MB limit now that we process it)
-	const maxSize = 5 * 1024 * 1024;
-	if (file.size > maxSize) {
-		throw error(400, 'File too large. Maximum size is 5MB.');
-	}
-
-	const filename = `${session.user.id}-${Date.now()}.webp`;
-	const filePath = join(process.cwd(), 'static', 'uploads', filename);
 
 	try {
-		const arrayBuffer = await file.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
+		const formData = await request.formData();
+		const file = formData.get('file');
 
-		// Process image with sharp: resize to 200x200, crop to square (cover), and convert to webp
-		await sharp(buffer)
-			.resize(200, 200, {
-				fit: 'cover',
-				position: 'center'
-			})
-			.webp()
-			.toFile(filePath);
-
-		return json({
-			url: `/uploads/${filename}`
-		});
-	} catch (err) {
-		console.error('Upload error:', err);
-		throw error(500, 'Failed to process and save image');
-	}
-};
-
-export const DELETE = async ({ request }) => {
-	const session = await auth.api.getSession({
-		headers: request.headers
-	});
-
-	if (!session) {
-		throw error(401, 'Unauthorized');
-	}
-
-	const { url } = await request.json();
-
-	if (!url || !url.startsWith('/uploads/')) {
-		return json({ success: true }); // Ignore external URLs or missing URLs
-	}
-
-	const filename = url.replace('/uploads/', '');
-	
-	// Security check: Ensure the filename starts with the user's ID
-	if (!filename.startsWith(`${session.user.id}-`)) {
-		throw error(403, 'Forbidden: You can only delete your own images');
-	}
-
-	const filePath = join(process.cwd(), 'static', 'uploads', filename);
-
-	try {
-		if (existsSync(filePath)) {
-			unlinkSync(filePath);
+		if (!file || !(file instanceof File)) {
+			return json({ error: 'No file uploaded' }, { status: 400 });
 		}
-		return json({ success: true });
-	} catch (err) {
-		console.error('Delete error:', err);
-		throw error(500, 'Failed to delete image file');
+
+		const buffer = Buffer.from(await file.arrayBuffer());
+		const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
+		const uploadPath = path.join(process.cwd(), 'static', 'uploads', filename);
+
+		await sharp(buffer)
+			.webp({ quality: 80 })
+			.toFile(uploadPath);
+
+		return json({ 
+			success: true, 
+			url: `/uploads/${filename}` 
+		});
+	} catch (error) {
+		console.error('Upload error:', error);
+		return json({ error: 'Αποτυχία ανεβάσματος και επεξεργασίας εικόνας.' }, { status: 500 });
 	}
 };

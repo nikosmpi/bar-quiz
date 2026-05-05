@@ -36,7 +36,7 @@ export const actions = {
 		const userId = formData.get('userId');
 		const newRole = formData.get('role');
 
-		const validRoles = ['admin', 'gamemaster', 'player', 'ban'];
+		const validRoles = ['admin', 'quizmaster', 'player', 'ban'];
 		if (!validRoles.includes(newRole)) {
 			return fail(400, { message: 'Invalid role' });
 		}

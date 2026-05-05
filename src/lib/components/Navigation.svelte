@@ -43,6 +43,9 @@
 				<li><a href="/" onclick={toggleMenu}>Αρχική</a></li>
 				{#if $session.data}
 					<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
+					{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
+						<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
+					{/if}
 					{#if $session.data.user.role === 'admin'}
 						<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
 					{/if}
