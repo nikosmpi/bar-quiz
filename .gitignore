@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 GEMINI.md
 local.db*
 drizzle/
+static/uploads/*
+!static/uploads/.gitkeep
