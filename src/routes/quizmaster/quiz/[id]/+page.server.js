@@ -48,6 +48,7 @@ export const actions = {
 		const introText = formData.get('introText')?.toString().trim();
 		const mediaType = formData.get('mediaType')?.toString() || 'image';
 		const featuredImage = formData.get('featuredImage')?.toString().trim();
+		const coverImage = formData.get('coverImage')?.toString().trim();
 
 		if (!name) return fail(400, { message: 'Το όνομα είναι υποχρεωτικό.' });
 
@@ -56,6 +57,7 @@ export const actions = {
 			introText, 
 			mediaType,
 			featuredImage,
+			coverImage,
 			updatedAt: new Date() 
 		}).where(eq(quiz.id, params.id));
 		

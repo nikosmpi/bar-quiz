@@ -1,6 +1,6 @@
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { quiz } from '$lib/server/db/schema';
+import { quiz, config } from '$lib/server/db/schema';
 import { redirect, fail } from '@sveltejs/kit';
 import { eq, desc } from 'drizzle-orm';
 
@@ -20,9 +20,12 @@ export const load = async ({ request }) => {
 		quizzes = await db.select().from(quiz).where(eq(quiz.ownerId, session.user.id)).orderBy(desc(quiz.createdAt));
 	}
 
+	const activeQuizConfig = await db.select().from(config).where(eq(config.key, 'active_quiz_id')).get();
+
 	return {
 		user: session.user,
-		quizzes
+		quizzes,
+		activeQuizId: activeQuizConfig?.value || null
 	};
 };
 
@@ -58,5 +61,25 @@ export const actions = {
 			console.error('Failed to create quiz:', error);
 			return fail(500, { message: 'Σφάλμα κατά τη δημιουργία του quiz.' });
 		}
+	},
+
+	setActiveQuiz: async ({ request }) => {
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session || (session.user.role !== 'admin' && session.user.role !== 'quizmaster')) {
+			return fail(403);
+		}
+
+		const formData = await request.formData();
+		const quizId = formData.get('quizId')?.toString() || "";
+
+		// Use insert with onConflictUpdate (upsert) for the config table
+		await db.insert(config)
+			.values({ key: 'active_quiz_id', value: quizId })
+			.onConflictDoUpdate({
+				target: config.key,
+				set: { value: quizId }
+			});
+
+		return { success: true };
 	}
 };

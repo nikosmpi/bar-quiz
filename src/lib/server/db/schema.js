@@ -64,6 +64,7 @@ export const quiz = sqliteTable('quiz', {
 	introText: text('intro_text'),
 	mediaType: text('media_type').notNull().default('image'),
 	featuredImage: text('featured_image'),
+	coverImage: text('cover_image'),
 	ownerId: text('owner_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),

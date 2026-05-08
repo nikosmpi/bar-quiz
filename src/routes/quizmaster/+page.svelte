@@ -7,6 +7,7 @@
 	let { data, form } = $props();
 
 	let loading = $state(false);
+	let activeQuizLoading = $state(false);
 </script>
 
 <div class="quizmaster-container">
@@ -14,6 +15,36 @@
 		<h1>Quizmaster Dashboard</h1>
 		<p class="welcome">Καλώς ήρθες, <strong>{data.user.name}</strong>!</p>
 	</header>
+
+	<section class="active-quiz-section">
+		<Card title="Ενεργό Quiz για Παίκτες">
+			<form 
+				method="POST" 
+				action="?/setActiveQuiz" 
+				use:enhance={() => {
+					activeQuizLoading = true;
+					return async ({ update }) => {
+						await update();
+						activeQuizLoading = false;
+					};
+				}}
+				class="active-quiz-form"
+			>
+				<div class="input-group">
+					<label for="active-quiz">Επιλέξτε το Quiz που είναι "στον αέρα":</label>
+					<select name="quizId" id="active-quiz" value={data.activeQuizId || ""} disabled={activeQuizLoading}>
+						<option value="">-- Κανένα (Απενεργοποίηση) --</option>
+						{#each data.quizzes as q}
+							<option value={q.id}>{q.name}</option>
+						{/each}
+					</select>
+				</div>
+				<Button type="submit" loading={activeQuizLoading} variant="primary">
+					Ενημέρωση Ενεργού Quiz
+				</Button>
+			</form>
+		</Card>
+	</section>
 
 	<Card title="Δημιουργία Νέου Quiz" class="create-quiz-card">
 		<form 
@@ -43,8 +74,8 @@
 				Δημιουργία Quiz
 			</Button>
 		</form>
-		{#if form?.message}
-			<Alert type={form.success ? 'success' : 'error'} message={form.message} style="margin-top: 1.5rem; margin-bottom: 0;" />
+		{#if form?.message && !form?.success && !data.activeQuizId} <!-- Only show error for create quiz if it fails -->
+			<Alert type="error" message={form.message} style="margin-top: 1.5rem; margin-bottom: 0;" />
 		{/if}
 	</Card>
 
@@ -56,9 +87,14 @@
 			<div class="quiz-grid">
 				{#each data.quizzes as q}
 					<a href="/quizmaster/quiz/{q.id}" class="quiz-link">
-						<Card class="quiz-card">
+						<Card class="quiz-card {data.activeQuizId === q.id ? 'is-active' : ''}">
 							<div class="quiz-info">
-								<h3>{q.name}</h3>
+								<div class="title-row">
+									<h3>{q.name}</h3>
+									{#if data.activeQuizId === q.id}
+										<span class="active-badge">ΕΝΕΡΓΟ</span>
+									{/if}
+								</div>
 								<span class="date">Δημιουργήθηκε: {new Date(q.createdAt).toLocaleDateString('el-GR')}</span>
 							</div>
 						</Card>
@@ -74,11 +110,14 @@
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
 	}
 
 	header {
-		margin-bottom: 2rem;
 		text-align: center;
+		margin-bottom: 1rem;
 	}
 
 	h1 {
@@ -90,8 +129,42 @@
 		color: #6b7280;
 	}
 
-	:global(.create-quiz-card) {
-		margin-bottom: 2rem;
+	.active-quiz-form {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-end;
+		flex-wrap: wrap;
+	}
+
+	select {
+		padding: 0.75rem;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		font-size: 1rem;
+		background-color: white;
+		width: 100%;
+		max-width: 400px;
+	}
+
+	.active-badge {
+		background: #059669;
+		color: white;
+		font-size: 0.7rem;
+		font-weight: bold;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.title-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	:global(.quiz-card.is-active) {
+		border: 2px solid #059669 !important;
+		background-color: #f0fdf4 !important;
 	}
 
 	h2 {
@@ -170,7 +243,7 @@
 	}
 
 	.quiz-info h3 {
-		margin: 0 0 0.5rem 0;
+		margin: 0;
 		color: #111827;
 		font-size: 1.1rem;
 		transition: color 0.2s;
