@@ -1,6 +1,11 @@
 <script>
 	import { enhance } from '$app/forms';
 	import UserAvatar from '$lib/components/UserAvatar.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Alert from '$lib/components/Alert.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import Card from '$lib/components/Card.svelte';
+	
 	let { data, form } = $props();
 	
 	let users = $derived(data.users);
@@ -10,21 +15,25 @@
 <div class="admin-container">
 	<h1>Διαχείριση Χρηστών</h1>
 
-	<div class="registration-toggle">
+	<Card class="registration-toggle">
 		<div class="toggle-info">
 			<h3>Εγγραφή Νέων Χρηστών</h3>
 			<p>Όταν είναι απενεργοποιημένη, μόνο οι υπάρχοντες χρήστες μπορούν να συνδεθούν.</p>
 		</div>
 		<form method="POST" action="?/toggleRegistration" use:enhance>
 			<input type="hidden" name="enabled" value={data.registrationEnabled ? 'false' : 'true'} />
-			<button type="submit" class="toggle-btn" class:enabled={data.registrationEnabled}>
+			<Button 
+				type="submit" 
+				variant={data.registrationEnabled ? 'primary' : 'danger'} 
+				style="min-width: 180px; background: {data.registrationEnabled ? '#10b981' : '#ef4444'};"
+			>
 				{data.registrationEnabled ? 'ΕΝΕΡΓΟΠΟΙΗΜΕΝΗ' : 'ΑΠΕΝΕΡΓΟΠΟΙΗΜΕΝΗ'}
-			</button>
+			</Button>
 		</form>
-	</div>
+	</Card>
 
 	{#if form?.message}
-		<p class="message {form.success ? 'success' : 'error'}">{form.message || (form.success ? 'Η αλλαγή ολοκληρώθηκε!' : '')}</p>
+		<Alert type={form.success ? 'success' : 'error'} message={form.message} />
 	{/if}
 
 	<div class="table-container">
@@ -53,7 +62,7 @@
 							</div>
 						</td>
 						<td>
-							<span class="badge {u.role}">{u.role}</span>
+							<Badge variant={u.role}>{u.role}</Badge>
 						</td>
 						<td>
 							<form 
@@ -75,9 +84,9 @@
 									<option value="admin">Admin</option>
 									<option value="ban">Ban</option>
 								</select>
-								<button type="submit" disabled={loadingId === u.id}>
-									{loadingId === u.id ? '...' : 'Αλλαγή'}
-								</button>
+								<Button type="submit" loading={loadingId === u.id} style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+									Αλλαγή
+								</Button>
 							</form>
 						</td>
 						<td>
@@ -85,7 +94,7 @@
 								method="POST" 
 								action="?/deleteUser" 
 								use:enhance={() => {
-									if (!confirm(`Είστε σίγουροι ότι θέλετε να διαγράψετε τον χρήστη ${u.email};`)) return;
+									if (!confirm("Είστε σίγουροι ότι θέλετε να διαγράψετε τον χρήστη " + u.email + "?")) return;
 									loadingId = u.id;
 									return async ({ update }) => {
 										await update();
@@ -94,13 +103,14 @@
 								}}
 							>
 								<input type="hidden" name="userId" value={u.id} />
-								<button 
+								<Button 
 									type="submit" 
-									class="delete-btn" 
+									variant="danger" 
 									disabled={u.role === 'admin' || loadingId === u.id}
+									style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
 								>
 									Διαγραφή
-								</button>
+								</Button>
 							</form>
 						</td>
 					</tr>
@@ -123,13 +133,11 @@
 		text-align: center;
 	}
 
-	.registration-toggle {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 8px;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-		border: 1px solid #e5e7eb;
+	:global(.registration-toggle) {
 		margin-bottom: 2rem;
+	}
+
+	:global(.registration-toggle .card-body) {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -146,26 +154,6 @@
 		margin: 0;
 		color: #6b7280;
 		font-size: 0.9rem;
-	}
-
-	.toggle-btn {
-		min-width: 180px;
-		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
-		font-weight: 700;
-		background: #ef4444;
-		color: white;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.toggle-btn.enabled {
-		background: #10b981;
-	}
-
-	.toggle-btn:hover {
-		filter: brightness(0.9);
 	}
 
 	.table-container {
@@ -211,19 +199,6 @@
 		color: #6b7280;
 	}
 
-	.badge {
-		padding: 0.25rem 0.75rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-	}
-
-	.badge.admin { background: #fee2e2; color: #dc2626; }
-	.badge.quizmaster { background: #fef3c7; color: #d97706; }
-	.badge.player { background: #dcfce7; color: #16a34a; }
-	.badge.ban { background: #111827; color: white; }
-
 	.role-form {
 		display: flex;
 		gap: 0.5rem;
@@ -236,58 +211,4 @@
 		background: white;
 		font-size: 0.9rem;
 	}
-
-	button {
-		padding: 0.4rem 0.8rem;
-		background: #007bff;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.85rem;
-		font-weight: 600;
-		transition: background 0.2s;
-	}
-
-	button:hover:not(:disabled) {
-		background: #0056b3;
-	}
-
-	button:disabled {
-		background: #9ca3af;
-		cursor: not-allowed;
-	}
-
-	.delete-btn {
-		padding: 0.4rem 0.8rem;
-		background: #ef4444;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.85rem;
-		font-weight: 600;
-		transition: background 0.2s;
-	}
-
-	.delete-btn:hover:not(:disabled) {
-		background: #dc2626;
-	}
-
-	.delete-btn:disabled {
-		background: #f3f4f6;
-		color: #9ca3af;
-		border: 1px solid #e5e7eb;
-		cursor: not-allowed;
-	}
-
-	.message {
-		padding: 1rem;
-		border-radius: 6px;
-		margin-bottom: 1.5rem;
-		text-align: center;
-	}
-
-	.message.success { background: #d1fae5; color: #065f46; }
-	.message.error { background: #fee2e2; color: #991b1b; }
 </style>

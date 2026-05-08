@@ -1,6 +1,10 @@
 <script>
 	import { authClient } from '$lib/auth-client';
 	import UserAvatar from '$lib/components/UserAvatar.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Alert from '$lib/components/Alert.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import Card from '$lib/components/Card.svelte';
 	
 	let { data } = $props();
 	
@@ -42,7 +46,6 @@
 			message = { type: 'error', text: error.message || 'Αποτυχία ενημέρωσης προφίλ.' };
 		} else {
 			message = { type: 'success', text: 'Το προφίλ ενημερώθηκε επιτυχώς!' };
-			// If image changed, delete the old one from server
 			if (oldImage && oldImage !== image) {
 				await deleteFile(oldImage);
 			}
@@ -71,7 +74,6 @@
 
 			const result = await response.json();
 			
-			// If we had a temporary image (uploaded in this session but not saved), delete it
 			if (image && image !== data.user.image) {
 				await deleteFile(image);
 			}
@@ -86,7 +88,6 @@
 	}
 
 	function removeImage() {
-		// If we had a temporary image, delete it immediately
 		if (image && image !== data.user.image) {
 			deleteFile(image);
 		}
@@ -96,7 +97,7 @@
 </script>
 
 <div class="profile-container">
-	<div class="profile-card">
+	<Card class="profile-card">
 		<div class="header">
 			<div class="avatar-section">
 				<div class="avatar-container" onclick={() => fileInput.click()} aria-hidden="true">
@@ -122,12 +123,12 @@
 		</div>
 
 		{#if message.text}
-			<p class="message {message.type}">{message.text}</p>
+			<Alert type={message.type} message={message.text} />
 		{/if}
 
 		<div class="info-grid">
 			<form onsubmit={(e) => { e.preventDefault(); updateProfile(); }} class="update-form">
-				<div class="info-item no-border">
+				<div class="info-item">
 					<span class="label">Username:</span>
 					<input 
 						type="text" 
@@ -145,17 +146,17 @@
 				
 				<div class="info-item">
 					<span class="label">Ρόλος:</span>
-					<span class="value badge">{data.user.role}</span>
+					<Badge variant={data.user.role}>{data.user.role}</Badge>
 				</div>
 
 				<div class="button-container">
-					<button type="submit" class="submit-btn" disabled={loading}>
-						{loading ? 'Ενημέρωση...' : 'Αποθήκευση Αλλαγών'}
-					</button>
+					<Button type="submit" {loading} class="btn-full">
+						Αποθήκευση Αλλαγών
+					</Button>
 				</div>
 			</form>
 		</div>
-	</div>
+	</Card>
 </div>
 
 <style>
@@ -165,14 +166,8 @@
 		padding: 2rem 1rem;
 	}
 
-	.profile-card {
-		background: white;
-		padding: 2.5rem;
-		border-radius: 12px;
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-		width: 100%;
-		max-width: 500px;
-		border: 1px solid #e5e7eb;
+	:global(.profile-card) {
+		max-width: 500px !important;
 	}
 
 	.header {
@@ -261,10 +256,6 @@
 		border-bottom: 1px solid #f3f4f6;
 	}
 
-	.info-item.no-border {
-		border-bottom: 1px solid #f3f4f6;
-	}
-
 	.label {
 		font-weight: 600;
 		color: #4b5563;
@@ -288,7 +279,7 @@
 	}
 
 	.inline-input:focus {
-		outline: 2px solid #007bff;
+		outline: 2px solid #2563eb;
 		border-color: transparent;
 	}
 
@@ -296,55 +287,5 @@
 		margin-top: 2rem;
 		display: flex;
 		justify-content: center;
-	}
-
-	.submit-btn {
-		width: 100%;
-		padding: 0.75rem;
-		background: #007bff;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		cursor: pointer;
-		font-weight: 600;
-		font-size: 1rem;
-		transition: background 0.2s;
-	}
-
-	.submit-btn:hover:not(:disabled) {
-		background: #0056b3;
-	}
-
-	.submit-btn:disabled {
-		background: #9ca3af;
-		cursor: not-allowed;
-	}
-
-	.badge {
-		background: #ebf5ff;
-		color: #007bff;
-		padding: 0.25rem 0.75rem;
-		border-radius: 9999px;
-		font-size: 0.875rem;
-		font-weight: 600;
-		text-transform: capitalize;
-	}
-
-	.message {
-		padding: 0.75rem;
-		border-radius: 6px;
-		margin-bottom: 1.5rem;
-		font-size: 0.9rem;
-		text-align: center;
-	}
-
-	.message.success {
-		background: #d1fae5;
-		color: #065f46;
-	}
-
-	.message.error {
-		background: #fee2e2;
-		color: #991b1b;
 	}
 </style>

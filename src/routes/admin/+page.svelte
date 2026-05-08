@@ -1,20 +1,13 @@
 <script>
+	import Card from '$lib/components/Card.svelte';
+
 	const adminModules = [
 		{
 			title: 'Διαχείριση Χρηστών',
 			description: 'Αλλαγή ρόλων, προβολή στοιχείων και διαχείριση χρηστών.',
 			icon: '👥',
 			href: '/admin/users'
-		},
-		// Εδώ μπορούν να προστεθούν μελλοντικά κουμπιά
-		/*
-		{
-			title: 'Διαχείριση Κουίζ',
-			description: 'Δημιουργία, επεξεργασία και διαγραφή ερωτήσεων.',
-			icon: '📝',
-			href: '/admin/quizzes'
 		}
-		*/
 	];
 </script>
 
@@ -26,13 +19,17 @@
 
 	<div class="grid">
 		{#each adminModules as module}
-			<a href={module.href} class="module-card">
-				<div class="icon">{module.icon}</div>
-				<div class="content">
-					<h2>{module.title}</h2>
-					<p>{module.description}</p>
-				</div>
-				<div class="arrow">→</div>
+			<a href={module.href} class="module-link">
+				<Card class="module-card">
+					<div class="card-content">
+						<div class="icon">{module.icon}</div>
+						<div class="text-content">
+							<h2>{module.title}</h2>
+							<p>{module.description}</p>
+						</div>
+						<div class="arrow">→</div>
+					</div>
+				</Card>
 			</a>
 		{/each}
 	</div>
@@ -73,24 +70,30 @@
 		}
 	}
 
-	.module-card {
-		display: flex;
-		align-items: center;
-		padding: 1.5rem;
-		background: white;
-		border: 1px solid #e5e7eb;
-		border-radius: 12px;
+	.module-link {
 		text-decoration: none;
 		color: inherit;
-		transition: all 0.2s ease-in-out;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-		position: relative;
 	}
 
-	.module-card:hover {
+	:global(.module-card) {
+		transition: all 0.2s ease-in-out !important;
+		cursor: pointer;
+	}
+
+	:global(.module-card:hover) {
 		transform: translateY(-4px);
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-		border-color: #007bff;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+		border-color: #2563eb !important;
+	}
+
+	:global(.module-card .card-body) {
+		padding: 1.5rem !important;
+	}
+
+	.card-content {
+		display: flex;
+		align-items: center;
+		position: relative;
 	}
 
 	.icon {
@@ -105,13 +108,13 @@
 		border-radius: 10px;
 	}
 
-	.content h2 {
+	.text-content h2 {
 		margin: 0 0 0.25rem 0;
 		font-size: 1.25rem;
 		color: #111827;
 	}
 
-	.content p {
+	.text-content p {
 		margin: 0;
 		font-size: 0.95rem;
 		color: #6b7280;
@@ -120,14 +123,14 @@
 
 	.arrow {
 		position: absolute;
-		right: 1.5rem;
+		right: 0;
 		font-size: 1.5rem;
 		color: #d1d5db;
 		transition: transform 0.2s;
 	}
 
-	.module-card:hover .arrow {
+	.module-link:hover .arrow {
 		transform: translateX(5px);
-		color: #007bff;
+		color: #2563eb;
 	}
 </style>

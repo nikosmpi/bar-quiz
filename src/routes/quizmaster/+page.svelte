@@ -1,5 +1,9 @@
 <script>
 	import { enhance } from '$app/forms';
+	import Card from '$lib/components/Card.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Alert from '$lib/components/Alert.svelte';
+	
 	let { data, form } = $props();
 
 	let loading = $state(false);
@@ -11,8 +15,7 @@
 		<p class="welcome">Καλώς ήρθες, <strong>{data.user.name}</strong>!</p>
 	</header>
 
-	<section class="create-quiz-section">
-		<h2>Δημιουργία Νέου Quiz</h2>
+	<Card title="Δημιουργία Νέου Quiz" class="create-quiz-card">
 		<form 
 			method="POST" 
 			action="?/createQuiz" 
@@ -36,27 +39,29 @@
 					disabled={loading}
 				/>
 			</div>
-			<button type="submit" disabled={loading}>
-				{loading ? 'Δημιουργία...' : 'Δημιουργία Quiz'}
-			</button>
+			<Button type="submit" {loading}>
+				Δημιουργία Quiz
+			</Button>
 		</form>
 		{#if form?.message}
-			<p class="message {form.success ? 'success' : 'error'}">{form.message}</p>
+			<Alert type={form.success ? 'success' : 'error'} message={form.message} style="margin-top: 1.5rem; margin-bottom: 0;" />
 		{/if}
-	</section>
+	</Card>
 
 	<section class="quiz-list-section">
-		<h2>Τα Quiz σου</h2>
+		<h2>Τα Quiz σου ({data.quizzes.length})</h2>
 		{#if data.quizzes.length === 0}
 			<p class="empty-state">Δεν έχεις δημιουργήσει ακόμα κάποιο quiz. Ξεκίνα από την παραπάνω φόρμα!</p>
 		{:else}
 			<div class="quiz-grid">
 				{#each data.quizzes as q}
-					<a href="/quizmaster/quiz/{q.id}" class="quiz-card">
-						<div class="quiz-info">
-							<h3>{q.name}</h3>
-							<span class="date">Δημιουργήθηκε: {new Date(q.createdAt).toLocaleDateString('el-GR')}</span>
-						</div>
+					<a href="/quizmaster/quiz/{q.id}" class="quiz-link">
+						<Card class="quiz-card">
+							<div class="quiz-info">
+								<h3>{q.name}</h3>
+								<span class="date">Δημιουργήθηκε: {new Date(q.createdAt).toLocaleDateString('el-GR')}</span>
+							</div>
+						</Card>
 					</a>
 				{/each}
 			</div>
@@ -85,13 +90,8 @@
 		color: #6b7280;
 	}
 
-	section {
-		background: white;
-		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	:global(.create-quiz-card) {
 		margin-bottom: 2rem;
-		border: 1px solid #e5e7eb;
 	}
 
 	h2 {
@@ -135,39 +135,7 @@
 	input:focus {
 		outline: none;
 		border-color: #2563eb;
-		ring: 2px solid #bfdbfe;
 	}
-
-	button {
-		padding: 0.75rem 1.5rem;
-		background: #2563eb;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.2s;
-		height: 48px;
-	}
-
-	button:hover:not(:disabled) {
-		background: #1d4ed8;
-	}
-
-	button:disabled {
-		background: #9ca3af;
-		cursor: not-allowed;
-	}
-
-	.message {
-		margin-top: 1rem;
-		padding: 0.75rem;
-		border-radius: 6px;
-		font-size: 0.9rem;
-	}
-
-	.message.success { background: #d1fae5; color: #065f46; }
-	.message.error { background: #fee2e2; color: #991b1b; }
 
 	.empty-state {
 		text-align: center;
@@ -181,33 +149,34 @@
 		gap: 1rem;
 	}
 
-	.quiz-card {
-		padding: 1.5rem;
-		border: 1px solid #e5e7eb;
-		border-radius: 8px;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
+	.quiz-link {
 		text-decoration: none;
 		color: inherit;
-		background: white;
-		transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 	}
 
-	.quiz-card:hover {
+	:global(.quiz-card) {
+		transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s !important;
+		height: 100%;
+	}
+
+	:global(.quiz-card:hover) {
 		transform: translateY(-4px);
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-		border-color: #2563eb;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+		border-color: #2563eb !important;
 	}
 
-	.quiz-card h3 {
+	:global(.quiz-card .card-body) {
+		padding: 1.5rem !important;
+	}
+
+	.quiz-info h3 {
 		margin: 0 0 0.5rem 0;
 		color: #111827;
 		font-size: 1.1rem;
 		transition: color 0.2s;
 	}
 
-	.quiz-card:hover h3 {
+	.quiz-link:hover h3 {
 		color: #2563eb;
 	}
 

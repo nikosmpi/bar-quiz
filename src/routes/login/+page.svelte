@@ -1,6 +1,8 @@
 <script>
 	import { authClient } from '$lib/auth-client';
 	import { goto } from '$app/navigation';
+	import Button from '$lib/components/Button.svelte';
+	import Alert from '$lib/components/Alert.svelte';
 
 	let email = $state('');
 	let otp = $state('');
@@ -52,11 +54,11 @@
 		<h1>Είσοδος</h1>
 		
 		{#if error}
-			<p class="error">{error}</p>
+			<Alert type="error" message={error} />
 		{/if}
 		
 		{#if message}
-			<p class="success">{message}</p>
+			<Alert type="success" message={message} />
 		{/if}
 
 		{#if step === 'email'}
@@ -71,9 +73,9 @@
 						required 
 					/>
 				</div>
-				<button type="submit" disabled={loading}>
-					{loading ? 'Αποστολή...' : 'Αποστολή Κωδικού'}
-				</button>
+				<Button type="submit" {loading} class="btn-full">
+					Αποστολή Κωδικού
+				</Button>
 			</form>
 		{:else}
 			<form onsubmit={(e) => { e.preventDefault(); verifyOTP(); }}>
@@ -88,12 +90,12 @@
 						required 
 					/>
 				</div>
-				<button type="submit" disabled={loading}>
-					{loading ? 'Επαλήθευση...' : 'Είσοδος'}
-				</button>
-				<button type="button" class="link-button" onclick={() => step = 'email'}>
+				<Button type="submit" {loading} class="btn-full">
+					Είσοδος
+				</Button>
+				<Button variant="link" onclick={() => step = 'email'} class="btn-full" style="margin-top: 1rem;">
 					Αλλαγή Email
-				</button>
+				</Button>
 			</form>
 		{/if}
 	</div>
@@ -141,57 +143,5 @@
 		border: 1px solid #ccc;
 		border-radius: 4px;
 		box-sizing: border-box;
-	}
-
-	button {
-		width: 100%;
-		padding: 0.75rem;
-		background-color: #007bff;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 1rem;
-		transition: background-color 0.2s;
-	}
-
-	button:hover:not(:disabled) {
-		background-color: #0056b3;
-	}
-
-	button:disabled {
-		background-color: #ccc;
-		cursor: not-allowed;
-	}
-
-	.link-button {
-		background: none;
-		color: #007bff;
-		margin-top: 1rem;
-		padding: 0;
-		font-size: 0.9rem;
-	}
-	
-	.link-button:hover {
-		text-decoration: underline;
-		background: none;
-	}
-
-	.error {
-		color: #dc3545;
-		background: #f8d7da;
-		padding: 0.75rem;
-		border-radius: 4px;
-		margin-bottom: 1rem;
-		font-size: 0.9rem;
-	}
-
-	.success {
-		color: #28a745;
-		background: #d4edda;
-		padding: 0.75rem;
-		border-radius: 4px;
-		margin-bottom: 1rem;
-		font-size: 0.9rem;
 	}
 </style>

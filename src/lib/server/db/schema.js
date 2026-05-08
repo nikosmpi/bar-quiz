@@ -62,6 +62,7 @@ export const quiz = sqliteTable('quiz', {
 	name: text('name').notNull(),
 	description: text('description'),
 	introText: text('intro_text'),
+	mediaType: text('media_type').notNull().default('image'),
 	featuredImage: text('featured_image'),
 	ownerId: text('owner_id')
 		.notNull()
