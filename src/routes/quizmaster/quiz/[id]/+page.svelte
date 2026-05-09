@@ -42,8 +42,8 @@
 	</header>
 
 	<div class="editor-layout">
-		<!-- Main Content: Questions Management -->
-		<main class="questions-main">
+		<!-- Left Side: Add Question -->
+		<aside class="side-panel">
 			<section class="add-question-section">
 				<h3>Προσθήκη Ερώτησης</h3>
 				<form 
@@ -58,15 +58,25 @@
 					}}
 					class="add-form"
 				>
-					<input type="text" name="text" placeholder="Γράψτε την ερώτηση εδώ..." required />
-					<Button type="submit" {loading} variant="primary" style="background: #059669;">Προσθήκη</Button>
+					<div class="field">
+						<input type="text" name="text" placeholder="Γράψτε την ερώτηση εδώ..." required />
+					</div>
+					<Button type="submit" {loading} variant="primary" class="btn-full" style="background: #059669;">
+						Προσθήκη Ερώτησης
+					</Button>
 				</form>
 			</section>
+		</aside>
 
+		<!-- Right Side: Questions Management -->
+		<main class="questions-main">
 			<section class="questions-list">
-				<h2>Ερωτήσεις ({data.questions.length})</h2>
+				<div class="list-header">
+					<h2>Ερωτήσεις ({data.questions.length})</h2>
+				</div>
+
 				{#if data.questions.length === 0}
-					<p class="empty">Δεν υπάρχουν ακόμα ερωτήσεις.</p>
+					<p class="empty">Δεν υπάρχουν ακόμα ερωτήσεις. Ξεκινήστε προσθέτοντας μία από τα αριστερά!</p>
 				{:else}
 					<div class="questions-grid">
 						{#each data.questions as q, i (q.id)}
@@ -111,7 +121,7 @@
 
 <style>
 	.edit-quiz-container {
-		max-width: 1000px;
+		max-width: 1200px;
 		margin: 0 auto;
 		padding: 1rem;
 	}
@@ -169,27 +179,54 @@
 	}
 
 	.editor-layout {
-		display: block;
+		display: grid;
+		grid-template-columns: 320px 1fr;
+		gap: 2.5rem;
+		align-items: start;
+	}
+
+	.side-panel {
+		position: sticky;
+		top: 5rem;
 	}
 
 	.add-question-section {
-		background: #f9fafb;
+		background: white;
 		padding: 1.5rem;
 		border-radius: 12px;
-		margin-bottom: 2rem;
-		border: 1px dashed #d1d5db;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	}
+
+	.add-question-section h3 {
+		margin-top: 0;
+		margin-bottom: 1rem;
+		font-size: 1.1rem;
+		color: #111827;
 	}
 
 	.add-form {
 		display: flex;
+		flex-direction: column;
 		gap: 1rem;
 	}
 
-	.add-form input {
-		flex: 1;
+	.add-form .field input {
+		width: 100%;
 		padding: 0.75rem;
 		border: 1px solid #d1d5db;
 		border-radius: 6px;
+		box-sizing: border-box;
+	}
+
+	.list-header {
+		margin-bottom: 1.5rem;
+	}
+
+	.list-header h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		color: #111827;
 	}
 
 	.questions-grid {
@@ -273,6 +310,15 @@
 
 	.delete-icon-btn:hover {
 		color: #ef4444;
+	}
+
+	@media (max-width: 900px) {
+		.editor-layout {
+			grid-template-columns: 1fr;
+		}
+		.side-panel {
+			position: static;
+		}
 	}
 
 	@media (max-width: 600px) {
