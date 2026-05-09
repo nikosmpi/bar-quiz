@@ -43,9 +43,11 @@
 				<li><a href="/" onclick={toggleMenu}>Αρχική</a></li>
 				{#if $session.data}
 					<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
+					{#if $session.data.user.role === 'player'}
+						<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
+					{/if}
 					{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
 						<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
-						<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
 						<li><a href="/display" onclick={toggleMenu}>Display</a></li>
 					{/if}
 					{#if $session.data.user.role === 'admin'}

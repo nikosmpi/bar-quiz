@@ -6,8 +6,8 @@ export const load = async ({ request }) => {
 		headers: request.headers
 	});
 
-	if (!session || (session.user.role !== 'admin' && session.user.role !== 'quizmaster')) {
-		throw redirect(302, '/login');
+	if (!session || session.user.role !== 'player') {
+		throw redirect(302, '/');
 	}
 
 	return {
