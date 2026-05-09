@@ -42,31 +42,6 @@
 			</form>
 		</Card>
 	</section>
-
-	<section class="quiz-list-section">
-		<h2>Όλα τα Quiz ({data.quizzes.length})</h2>
-		{#if data.quizzes.length === 0}
-			<p class="empty-state">Δεν υπάρχουν δημιουργημένα quiz.</p>
-		{:else}
-			<div class="quiz-grid">
-				{#each data.quizzes as q}
-					<div class="quiz-item">
-						<Card class="quiz-card {data.activeQuizId === q.id ? 'is-active' : ''}">
-							<div class="quiz-info">
-								<div class="title-row">
-									<h3>{q.name}</h3>
-									{#if data.activeQuizId === q.id}
-										<span class="active-badge">ΕΝΕΡΓΟ</span>
-									{/if}
-								</div>
-								<span class="date">Δημιουργήθηκε: {new Date(q.createdAt).toLocaleDateString('el-GR')}</span>
-							</div>
-						</Card>
-					</div>
-				{/each}
-			</div>
-		{/if}
-	</section>
 </div>
 
 <style>
@@ -125,62 +100,5 @@
 		font-size: 1rem;
 		background-color: white;
 		width: 100%;
-	}
-
-	h2 {
-		margin-top: 0;
-		margin-bottom: 1.5rem;
-		font-size: 1.25rem;
-		color: #1f2937;
-		border-bottom: 2px solid #f3f4f6;
-		padding-bottom: 0.5rem;
-	}
-
-	.quiz-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: 1rem;
-	}
-
-	:global(.quiz-card) {
-		height: 100%;
-	}
-
-	:global(.quiz-card.is-active) {
-		border: 2px solid #059669 !important;
-		background-color: #f0fdf4 !important;
-	}
-
-	.title-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.5rem;
-	}
-
-	.active-badge {
-		background: #059669;
-		color: white;
-		font-size: 0.7rem;
-		font-weight: bold;
-		padding: 2px 6px;
-		border-radius: 4px;
-	}
-
-	.quiz-info h3 {
-		margin: 0;
-		color: #111827;
-		font-size: 1.1rem;
-	}
-
-	.date {
-		font-size: 0.8rem;
-		color: #9ca3af;
-	}
-
-	.empty-state {
-		text-align: center;
-		color: #6b7280;
-		padding: 2rem 0;
 	}
 </style>
