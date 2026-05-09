@@ -4,19 +4,36 @@
 	import Alert from '$lib/components/Alert.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import MediaField from '$lib/components/MediaField.svelte';
+	import { untrack } from 'svelte';
 	
 	let { data, form } = $props();
 
 	let loading = $state(false);
 	let message = $state(null);
 
-	// Local state for media
-	let mediaType = $state('none');
-	let mediaUrl = $state('');
+	// Local state for all fields to ensure stability during updates
+	let qText = $state(data.question.text);
+	let qPoints = $state(data.question.points);
+	let qTimeLimit = $state(data.question.timeLimit);
+	let mediaType = $state(data.question.mediaType || 'none');
+	let mediaUrl = $state(data.question.mediaUrl || '');
+	let localOptions = $state(data.options.map(o => ({ ...o })));
 
+	// Sync local state when server data changes (after update())
 	$effect(() => {
-		mediaType = data.question.mediaType || 'none';
-		mediaUrl = data.question.mediaUrl || '';
+		if (loading) return;
+		
+		const remoteQuestion = data.question;
+		const remoteOptions = data.options;
+
+		untrack(() => {
+			qText = remoteQuestion.text;
+			qPoints = remoteQuestion.points;
+			qTimeLimit = remoteQuestion.timeLimit;
+			mediaType = remoteQuestion.mediaType || 'none';
+			mediaUrl = remoteQuestion.mediaUrl || '';
+			localOptions = remoteOptions.map(o => ({ ...o }));
+		});
 	});
 
 	$effect(() => {
@@ -46,17 +63,17 @@
 		<Card class="main-card">
 			<div class="field">
 				<label for="q-text">Κείμενο Ερώτησης</label>
-				<textarea id="q-text" name="text" rows="3" value={data.question.text} required></textarea>
+				<textarea id="q-text" name="text" rows="3" bind:value={qText} required></textarea>
 			</div>
 
 			<div class="meta-grid">
 				<div class="field">
 					<label for="q-points">Πόντοι</label>
-					<input type="number" id="q-points" name="points" value={data.question.points} min="1" />
+					<input type="number" id="q-points" name="points" bind:value={qPoints} min="1" />
 				</div>
 				<div class="field">
 					<label for="q-time">Χρόνος (sec)</label>
-					<input type="number" id="q-time" name="timeLimit" value={data.question.timeLimit} min="5" />
+					<input type="number" id="q-time" name="timeLimit" bind:value={qTimeLimit} min="5" />
 				</div>
 			</div>
 		</Card>
@@ -71,14 +88,23 @@
 
 		<Card title="Επιλογές Απάντησης" class="options-card">
 			<div class="options-list">
-				{#each data.options as opt}
+				{#each localOptions as opt, i (opt.id)}
 					<div class="option-row" class:is-correct={opt.isCorrect}>
 						<div class="radio-wrapper">
-							<input type="radio" name="correctOption" value={opt.id} checked={opt.isCorrect} required />
+							<input 
+								type="radio" 
+								name="correctOption" 
+								value={opt.id} 
+								checked={opt.isCorrect} 
+								onchange={() => {
+									localOptions.forEach((o, idx) => o.isCorrect = (idx === i));
+								}}
+								required 
+							/>
 						</div>
 						<div class="input-wrapper">
 							<input type="hidden" name="optionId" value={opt.id} />
-							<input type="text" name="optionText" value={opt.text} required />
+							<input type="text" name="optionText" bind:value={localOptions[i].text} required />
 						</div>
 					</div>
 				{/each}

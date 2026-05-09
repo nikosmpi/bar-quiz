@@ -10,6 +10,7 @@
 <style>
 	.display-container {
 		height: 100vh;
+		width: 100vw;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
@@ -18,6 +19,8 @@
 		color: #fff;
 		text-align: center;
 		padding: 2rem;
+		overflow: hidden;
+		box-sizing: border-box;
 	}
 
 	h1 {

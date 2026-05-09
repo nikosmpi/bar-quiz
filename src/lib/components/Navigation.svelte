@@ -1,6 +1,7 @@
 <script>
 	import { authClient } from '$lib/auth-client';
 	import UserAvatar from './UserAvatar.svelte';
+	import { page } from '$app/stores';
 
 	let isOpen = $state(false);
 	const session = authClient.useSession();
@@ -13,47 +14,50 @@
 		await authClient.signOut();
 		window.location.href = '/login';
 	}
+
+	let isDisplayPage = $derived($page.url.pathname === '/display');
 </script>
 
-<button class="burger" onclick={toggleMenu} aria-label="Toggle menu" class:active={isOpen}>
-	<span class="line"></span>
-	<span class="line"></span>
-	<span class="line"></span>
-</button>
+{#if !isDisplayPage}
+	<button class="burger" onclick={toggleMenu} aria-label="Toggle menu" class:active={isOpen}>
+		<span class="line"></span>
+		<span class="line"></span>
+		<span class="line"></span>
+	</button>
 
-{#if isOpen}
-	<div class="menu-overlay" onclick={toggleMenu} aria-hidden="true"></div>
-	<div class="menu-content" class:open={isOpen}>
-		{#if $session.data}
-			<div class="user-header">
-				<UserAvatar user={$session.data.user} size="48px" />
-				<div class="user-greeting">
-					<span class="welcome">Καλώς ήρθες,</span>
-					<span class="username">{$session.data.user.username || $session.data.user.name}</span>
-				</div>
-			</div>
-			<hr />
-		{/if}
-		<ul class="menu-links">
-			<li><a href="/" onclick={toggleMenu}>Αρχική</a></li>
+	{#if isOpen}
+		<div class="menu-overlay" onclick={toggleMenu} aria-hidden="true"></div>
+		<div class="menu-content" class:open={isOpen}>
 			{#if $session.data}
-				<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
-				{#if $session.data.user.role === 'player'}
-					<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
-				{/if}
-				{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
-					<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
-					<li><a href="/display" onclick={toggleMenu}>Display</a></li>
-				{/if}
-				{#if $session.data.user.role === 'admin'}
-					<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
-				{/if}
-				<li><button class="logout-btn" onclick={logout}>Αποσύνδεση</button></li>
-			{:else}
-				<li><a href="/login" onclick={toggleMenu}>Είσοδος</a></li>
+				<div class="user-header">
+					<UserAvatar user={$session.data.user} size="48px" />
+					<div class="user-greeting">
+						<span class="welcome">Καλώς ήρθες,</span>
+						<span class="username">{$session.data.user.username || $session.data.user.name}</span>
+					</div>
+				</div>
+				<hr />
 			{/if}
-		</ul>
-	</div>
+			<ul class="menu-links">
+				{#if $session.data}
+					<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
+					{#if $session.data.user.role === 'player'}
+						<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
+					{/if}
+					{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
+						<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
+						<li><a href="/display" onclick={toggleMenu}>Display</a></li>
+					{/if}
+					{#if $session.data.user.role === 'admin'}
+						<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
+					{/if}
+					<li><button class="logout-btn" onclick={logout}>Αποσύνδεση</button></li>
+				{:else}
+					<li><a href="/login" onclick={toggleMenu}>Είσοδος</a></li>
+				{/if}
+			</ul>
+		</div>
+	{/if}
 {/if}
 
 <style>
