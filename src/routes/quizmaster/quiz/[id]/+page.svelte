@@ -13,14 +13,12 @@
 	let quizIntro = $state("");
 	let quizMediaType = $state("image");
 	let featuredImageUrl = $state("");
-	let coverImageUrl = $state("");
 
 	$effect(() => {
 		quizName = data.quiz.name;
 		quizIntro = data.quiz.introText || '';
 		quizMediaType = data.quiz.mediaType || 'image';
 		featuredImageUrl = data.quiz.featuredImage || '';
-		coverImageUrl = data.quiz.coverImage || '';
 	});
 </script>
 
@@ -38,18 +36,6 @@
 					<div class="field">
 						<label for="quiz-name">Όνομα Quiz</label>
 						<input type="text" id="quiz-name" name="name" bind:value={quizName} required />
-					</div>
-
-					<div class="field">
-						<label for="quiz-cover">Εξώφυλλο Quiz</label>
-						<MediaField 
-							mediaType="image" 
-							bind:mediaUrl={coverImageUrl} 
-							originalUrl={data.quiz.coverImage}
-							allowYouTube={false}
-							allowVideoFile={false}
-						/>
-						<input type="hidden" name="coverImage" value={coverImageUrl} />
 					</div>
 
 					<div class="field">

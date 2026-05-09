@@ -15,11 +15,18 @@ export const load = async ({ request }) => {
 
 	const quizzes = await db.select().from(quiz).orderBy(desc(quiz.createdAt));
 	const activeQuizConfig = await db.select().from(config).where(eq(config.key, 'active_quiz_id')).get();
+	const activeQuizId = activeQuizConfig?.value || null;
+
+	let activeQuiz = null;
+	if (activeQuizId) {
+		activeQuiz = await db.select().from(quiz).where(eq(quiz.id, activeQuizId)).get();
+	}
 
 	return {
 		user: session.user,
 		quizzes,
-		activeQuizId: activeQuizConfig?.value || null
+		activeQuizId,
+		activeQuiz
 	};
 };
 
@@ -32,14 +39,22 @@ export const actions = {
 
 		const formData = await request.formData();
 		const quizId = formData.get('quizId')?.toString() || "";
+		const coverImage = formData.get('coverImage')?.toString().trim();
 
-		// Use insert with onConflictUpdate (upsert) for the config table
+		// Update active quiz ID in config
 		await db.insert(config)
 			.values({ key: 'active_quiz_id', value: quizId })
 			.onConflictDoUpdate({
 				target: config.key,
 				set: { value: quizId }
 			});
+
+		// If a quiz is selected and a cover image is provided (or changed), update the quiz
+		if (quizId && coverImage !== undefined) {
+			await db.update(quiz)
+				.set({ coverImage, updatedAt: new Date() })
+				.where(eq(quiz.id, quizId));
+		}
 
 		return { success: true };
 	}

@@ -2,9 +2,34 @@
 	import { enhance } from '$app/forms';
 	import Card from '$lib/components/Card.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import MediaField from '$lib/components/MediaField.svelte';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
 	let activeQuizLoading = $state(false);
+
+	let selectedQuizId = $state(data.activeQuizId || "");
+	let coverImageUrl = $state(data.activeQuiz?.coverImage || "");
+
+	// Keep coverImageUrl in sync when the user selects a different quiz
+	function handleQuizChange() {
+		const quiz = data.quizzes.find(q => q.id === selectedQuizId);
+		coverImageUrl = quiz?.coverImage || "";
+	}
+
+	// Update local state when server data changes (e.g. after successful form submission)
+	$effect(() => {
+		// We want this to run whenever data OR activeQuizLoading changes
+		if (activeQuizLoading) return;
+
+		const remoteId = data.activeQuizId || "";
+		const remoteCover = data.activeQuiz?.coverImage || "";
+		
+		untrack(() => {
+			selectedQuizId = remoteId;
+			coverImageUrl = remoteCover;
+		});
+	});
 </script>
 
 <div class="intro-admin-container">
@@ -29,13 +54,34 @@
 			>
 				<div class="input-group">
 					<label for="active-quiz">Επιλέξτε το Quiz που είναι "στον αέρα":</label>
-					<select name="quizId" id="active-quiz" value={data.activeQuizId || ""} disabled={activeQuizLoading}>
+					<select 
+						name="quizId" 
+						id="active-quiz" 
+						bind:value={selectedQuizId} 
+						onchange={handleQuizChange}
+						disabled={activeQuizLoading}
+					>
 						<option value="">-- Κανένα (Απενεργοποίηση) --</option>
 						{#each data.quizzes as q}
 							<option value={q.id}>{q.name}</option>
 						{/each}
 					</select>
 				</div>
+
+				{#if selectedQuizId}
+					<div class="field">
+						<label for="quiz-cover">Εξώφυλλο Quiz</label>
+						<MediaField 
+							mediaType="image" 
+							bind:mediaUrl={coverImageUrl} 
+							originalUrl={data.quizzes.find(q => q.id === selectedQuizId)?.coverImage || ""}
+							allowYouTube={false}
+							allowVideoFile={false}
+						/>
+						<input type="hidden" name="coverImage" value={coverImageUrl} />
+					</div>
+				{/if}
+
 				<Button type="submit" loading={activeQuizLoading} variant="primary">
 					Ενημέρωση Ενεργού Quiz
 				</Button>
@@ -74,14 +120,11 @@
 
 	.active-quiz-form {
 		display: flex;
-		gap: 1rem;
-		align-items: flex-end;
-		flex-wrap: wrap;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
 
 	.input-group {
-		flex: 1;
-		min-width: 250px;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
@@ -100,5 +143,12 @@
 		font-size: 1rem;
 		background-color: white;
 		width: 100%;
+		max-width: 400px;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
 	}
 </style>
