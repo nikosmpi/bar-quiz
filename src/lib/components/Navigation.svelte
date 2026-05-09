@@ -15,75 +15,48 @@
 	}
 </script>
 
-<nav class="nav-container">
-	<div class="logo">
-		<a href="/">Quiz App</a>
-	</div>
+<button class="burger" onclick={toggleMenu} aria-label="Toggle menu" class:active={isOpen}>
+	<span class="line"></span>
+	<span class="line"></span>
+	<span class="line"></span>
+</button>
 
-	<button class="burger" onclick={toggleMenu} aria-label="Toggle menu" class:active={isOpen}>
-		<span class="line"></span>
-		<span class="line"></span>
-		<span class="line"></span>
-	</button>
-
-	{#if isOpen}
-		<div class="menu-overlay" onclick={toggleMenu} aria-hidden="true"></div>
-		<div class="menu-content" class:open={isOpen}>
-			{#if $session.data}
-				<div class="user-header">
-					<UserAvatar user={$session.data.user} size="48px" />
-					<div class="user-greeting">
-						<span class="welcome">Καλώς ήρθες,</span>
-						<span class="username">{$session.data.user.username || $session.data.user.name}</span>
-					</div>
+{#if isOpen}
+	<div class="menu-overlay" onclick={toggleMenu} aria-hidden="true"></div>
+	<div class="menu-content" class:open={isOpen}>
+		{#if $session.data}
+			<div class="user-header">
+				<UserAvatar user={$session.data.user} size="48px" />
+				<div class="user-greeting">
+					<span class="welcome">Καλώς ήρθες,</span>
+					<span class="username">{$session.data.user.username || $session.data.user.name}</span>
 				</div>
-				<hr />
-			{/if}
-			<ul class="menu-links">
-				<li><a href="/" onclick={toggleMenu}>Αρχική</a></li>
-				{#if $session.data}
-					<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
-					{#if $session.data.user.role === 'player'}
-						<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
-					{/if}
-					{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
-						<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
-						<li><a href="/display" onclick={toggleMenu}>Display</a></li>
-					{/if}
-					{#if $session.data.user.role === 'admin'}
-						<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
-					{/if}
-					<li><button class="logout-btn" onclick={logout}>Αποσύνδεση</button></li>
-				{:else}
-					<li><a href="/login" onclick={toggleMenu}>Είσοδος</a></li>
+			</div>
+			<hr />
+		{/if}
+		<ul class="menu-links">
+			<li><a href="/" onclick={toggleMenu}>Αρχική</a></li>
+			{#if $session.data}
+				<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
+				{#if $session.data.user.role === 'player'}
+					<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
 				{/if}
-			</ul>
-		</div>
-	{/if}
-</nav>
+				{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
+					<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
+					<li><a href="/display" onclick={toggleMenu}>Display</a></li>
+				{/if}
+				{#if $session.data.user.role === 'admin'}
+					<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
+				{/if}
+				<li><button class="logout-btn" onclick={logout}>Αποσύνδεση</button></li>
+			{:else}
+				<li><a href="/login" onclick={toggleMenu}>Είσοδος</a></li>
+			{/if}
+		</ul>
+	</div>
+{/if}
 
 <style>
-	.nav-container {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1rem 2rem;
-		background: #333;
-		color: white;
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 100;
-	}
-
-	.logo a {
-		color: white;
-		text-decoration: none;
-		font-size: 1.5rem;
-		font-weight: bold;
-	}
-
 	.burger {
 		display: flex;
 		flex-direction: column;
@@ -95,12 +68,15 @@
 		cursor: pointer;
 		padding: 0;
 		z-index: 110;
+		position: fixed;
+		top: 1.5rem;
+		right: 1.5rem;
 	}
 
 	.line {
 		width: 2rem;
 		height: 0.25rem;
-		background: white;
+		background: #333;
 		border-radius: 10px;
 		transition: all 0.3s linear;
 		position: relative;
