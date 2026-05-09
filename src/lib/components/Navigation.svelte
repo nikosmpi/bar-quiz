@@ -41,16 +41,25 @@
 			<ul class="menu-links">
 				{#if $session.data}
 					<li><a href="/profile" onclick={toggleMenu}>Προφίλ</a></li>
+					
 					{#if $session.data.user.role === 'player'}
 						<li><a href="/controler" onclick={toggleMenu}>Controller</a></li>
 					{/if}
+
 					{#if $session.data.user.role === 'admin' || $session.data.user.role === 'quizmaster'}
 						<li><a href="/quizmaster" onclick={toggleMenu}>Quizmaster Dashboard</a></li>
+						
+						{#if $page.data.activeQuizId}
+							<li><a href="/game-control" onclick={toggleMenu}>Game Control</a></li>
+						{/if}
+						
 						<li><a href="/display" onclick={toggleMenu}>Display</a></li>
 					{/if}
+
 					{#if $session.data.user.role === 'admin'}
 						<li><a href="/admin" onclick={toggleMenu}>Admin Panel</a></li>
 					{/if}
+					
 					<li><button class="logout-btn" onclick={logout}>Αποσύνδεση</button></li>
 				{:else}
 					<li><a href="/login" onclick={toggleMenu}>Είσοδος</a></li>
