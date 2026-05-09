@@ -1,66 +1,18 @@
 <script>
 	import Button from './Button.svelte';
 	import MediaPreview from './MediaPreview.svelte';
+	import MediaPicker from './MediaPicker.svelte';
 
 	let { 
 		mediaType = $bindable('none'), 
 		mediaUrl = $bindable(''),
-		originalUrl = '',
 		allowYouTube = true,
 		allowVideoFile = true
 	} = $props();
 
-	let uploading = $state(false);
+	let showPicker = $state(false);
 
-	async function deleteFile(url) {
-		if (!url || !url.startsWith('/uploads/')) return;
-		if (url === originalUrl) return;
-
-		try {
-			await fetch('/api/upload', {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url })
-			});
-		} catch (err) {
-			console.error('Failed to delete file:', err);
-		}
-	}
-
-	async function handleUpload(e) {
-		const file = e.target.files[0];
-		if (!file) return;
-
-		uploading = true;
-		const formData = new FormData();
-		formData.append('file', file);
-
-		try {
-			const response = await fetch('/api/upload', {
-				method: 'POST',
-				body: formData
-			});
-			const result = await response.json();
-			if (result.success) {
-				if (mediaUrl && mediaUrl.startsWith('/uploads/') && mediaUrl !== originalUrl) {
-					await deleteFile(mediaUrl);
-				}
-				mediaUrl = result.url;
-			} else {
-				alert(result.error || 'Σφάλμα στο ανέβασμα');
-			}
-		} catch (error) {
-			console.error(error);
-			alert('Αποτυχία ανεβάσματος αρχείου');
-		} finally {
-			uploading = false;
-		}
-	}
-
-	async function removeMedia() {
-		if (mediaUrl && mediaUrl.startsWith('/uploads/') && mediaUrl !== originalUrl) {
-			await deleteFile(mediaUrl);
-		}
+	function removeMedia() {
 		mediaUrl = '';
 	}
 
@@ -69,6 +21,11 @@
 			removeMedia();
 		}
 		mediaType = newType;
+	}
+
+	function selectFromLibrary(item) {
+		mediaUrl = item.url;
+		showPicker = false;
 	}
 </script>
 
@@ -104,19 +61,19 @@
 	</div>
 
 	<div class="media-content">
-		{#if mediaType === 'image'}
-			<div class="upload-zone">
-				<input 
-					type="file" 
-					accept="image/*" 
-					onchange={handleUpload} 
-					disabled={uploading} 
-				/>
-				{#if uploading}<p class="status">Ανέβασμα...</p>{/if}
-				{#if mediaUrl && !mediaUrl.endsWith('.mp4')}
+		{#if mediaType === 'image' || mediaType === 'video_file'}
+			<div class="library-trigger">
+				{#if !mediaUrl}
+					<Button variant="secondary" onclick={() => showPicker = true} class="btn-full">
+						Άνοιγμα Βιβλιοθήκης Πολυμέσων
+					</Button>
+				{:else}
 					<div class="preview-container">
-						<MediaPreview url={mediaUrl} type="image" />
-						<Button variant="danger" onclick={removeMedia} class="remove-btn">✕</Button>
+						<MediaPreview url={mediaUrl} type={mediaType === 'video_file' ? 'video_file' : 'image'} />
+						<div class="preview-actions">
+							<Button variant="secondary" onclick={() => showPicker = true}>Αλλαγή</Button>
+							<Button variant="danger" onclick={removeMedia}>Αφαίρεση</Button>
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -135,25 +92,17 @@
 					</div>
 				{/if}
 			</div>
-		{:else if mediaType === 'video_file'}
-			<div class="upload-zone">
-				<input 
-					type="file" 
-					accept="video/mp4" 
-					onchange={handleUpload} 
-					disabled={uploading} 
-				/>
-				{#if uploading}<p class="status">Ανέβασμα...</p>{/if}
-				{#if mediaUrl && mediaUrl.endsWith('.mp4')}
-					<div class="preview-container">
-						<MediaPreview url={mediaUrl} type="video_file" />
-						<Button variant="danger" onclick={removeMedia} class="remove-btn">✕</Button>
-					</div>
-				{/if}
-			</div>
 		{/if}
 	</div>
 </div>
+
+{#if showPicker}
+	<MediaPicker 
+		type={mediaType === 'video_file' ? 'video' : 'image'} 
+		onSelect={selectFromLibrary} 
+		onClose={() => showPicker = false} 
+	/>
+{/if}
 
 <style>
 	.media-field {
@@ -189,32 +138,17 @@
 		box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 	}
 
-	.upload-zone {
+	.preview-container {
+		position: relative;
+		margin-top: 0.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
 
-	.status {
-		font-size: 0.85rem;
-		color: #2563eb;
-		margin: 0;
-	}
-
-	.preview-container {
-		position: relative;
-		margin-top: 0.5rem;
-	}
-
-	.remove-btn {
-		position: absolute;
-		top: 5px;
-		right: 5px;
-		width: 28px;
-		height: 28px;
-		padding: 0;
-		border-radius: 50%;
-		z-index: 10;
+	.preview-actions {
+		display: flex;
+		gap: 0.5rem;
 	}
 
 	.url-input {

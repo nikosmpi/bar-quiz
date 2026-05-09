@@ -5,38 +5,25 @@
 	import Alert from '$lib/components/Alert.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import MediaPicker from '$lib/components/MediaPicker.svelte';
 	
 	let { data } = $props();
 	
 	let username = $state("");
 	let image = $state("");
 	let loading = $state(false);
+	let showPicker = $state(false);
 	let message = $state({ type: '', text: '' });
-	let fileInput;
 
 	$effect(() => {
 		username = data.user.username || '';
 		image = data.user.image || '';
 	});
 
-	async function deleteFile(url) {
-		if (!url || !url.startsWith('/uploads/')) return;
-		try {
-			await fetch('/api/upload', {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url })
-			});
-		} catch (err) {
-			console.error('Failed to delete old file:', err);
-		}
-	}
-
 	async function updateProfile() {
 		loading = true;
 		message = { type: '', text: '' };
 		
-		const oldImage = data.user.image;
 		const { error } = await authClient.updateUser({
 			username: username,
 			image: image
@@ -46,51 +33,17 @@
 			message = { type: 'error', text: error.message || 'Αποτυχία ενημέρωσης προφίλ.' };
 		} else {
 			message = { type: 'success', text: 'Το προφίλ ενημερώθηκε επιτυχώς!' };
-			if (oldImage && oldImage !== image) {
-				await deleteFile(oldImage);
-			}
 		}
 		loading = false;
 	}
 
-	async function handleImageUpload(e) {
-		const file = e.target.files[0];
-		if (!file) return;
-
-		loading = true;
-		const formData = new FormData();
-		formData.append('image', file);
-
-		try {
-			const response = await fetch('/api/upload', {
-				method: 'POST',
-				body: formData
-			});
-
-			if (!response.ok) {
-				const err = await response.json();
-				throw new Error(err.error || err.message || 'Αποτυχία ανεβάσματος εικόνας');
-			}
-
-			const result = await response.json();
-			
-			if (image && image !== data.user.image) {
-				await deleteFile(image);
-			}
-
-			image = result.url;
-			message = { type: 'success', text: 'Η εικόνα ανέβηκε! Πατήστε "Αποθήκευση" για οριστικοποίηση.' };
-		} catch (err) {
-			message = { type: 'error', text: err.message };
-		} finally {
-			loading = false;
-		}
+	function handleMediaSelect(item) {
+		image = item.url;
+		showPicker = false;
+		message = { type: 'success', text: 'Η εικόνα επιλέχθηκε! Πατήστε "Αποθήκευση" για οριστικοποίηση.' };
 	}
 
 	function removeImage() {
-		if (image && image !== data.user.image) {
-			deleteFile(image);
-		}
 		image = '';
 		message = { type: 'success', text: 'Η εικόνα αφαιρέθηκε. Πατήστε "Αποθήκευση" για οριστικοποίηση.' };
 	}
@@ -100,7 +53,7 @@
 	<Card class="profile-card">
 		<div class="header">
 			<div class="avatar-section">
-				<div class="avatar-container" onclick={() => fileInput.click()} aria-hidden="true">
+				<div class="avatar-container" onclick={() => showPicker = true} onkeydown={(e) => e.key === 'Enter' && (showPicker = true)} role="button" tabindex="0">
 					<UserAvatar user={data.user} imageUrl={image} size="120px" />
 					<div class="avatar-overlay">
 						<span>Αλλαγή</span>
@@ -112,13 +65,6 @@
 					</button>
 				{/if}
 			</div>
-			<input 
-				type="file" 
-				accept="image/*" 
-				bind:this={fileInput} 
-				onchange={handleImageUpload} 
-				style="display: none;" 
-			/>
 			<h1>Το Προφίλ μου</h1>
 		</div>
 
@@ -159,6 +105,14 @@
 	</Card>
 </div>
 
+{#if showPicker}
+	<MediaPicker 
+		type="image" 
+		onSelect={handleMediaSelect} 
+		onClose={() => showPicker = false} 
+	/>
+{/if}
+
 <style>
 	.profile-container {
 		display: flex;
@@ -188,6 +142,8 @@
 		width: 120px;
 		height: 120px;
 		cursor: pointer;
+		border-radius: 50%;
+		overflow: hidden;
 	}
 
 	.avatar-overlay {
@@ -201,7 +157,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 50%;
 		opacity: 0;
 		transition: opacity 0.3s;
 		font-weight: 600;

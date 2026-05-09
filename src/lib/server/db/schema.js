@@ -78,6 +78,7 @@ export const question = sqliteTable('question', {
 		.notNull()
 		.references(() => quiz.id, { onDelete: 'cascade' }),
 	text: text('text').notNull(),
+	explanation: text('explanation'),
 	mediaType: text('media_type').notNull().default('none'), // 'none', 'image', 'video'
 	mediaUrl: text('media_url'),
 	points: integer('points').notNull().default(1),
@@ -95,4 +96,15 @@ export const option = sqliteTable('option', {
 	text: text('text').notNull(),
 	isCorrect: integer('is_correct', { mode: 'boolean' }).notNull().default(false),
 	order: integer('order').notNull().default(0)
+});
+
+export const media = sqliteTable('media', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	url: text('url').notNull(),
+	type: text('type').notNull(), // 'image', 'video'
+	ownerId: text('owner_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });

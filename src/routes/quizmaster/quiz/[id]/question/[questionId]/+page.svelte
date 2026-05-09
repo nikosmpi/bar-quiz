@@ -13,6 +13,7 @@
 
 	// Local state for all fields to ensure stability during updates
 	let qText = $state(data.question.text);
+	let qExplanation = $state(data.question.explanation || '');
 	let qPoints = $state(data.question.points);
 	let qTimeLimit = $state(data.question.timeLimit);
 	let mediaType = $state(data.question.mediaType || 'none');
@@ -28,6 +29,7 @@
 
 		untrack(() => {
 			qText = remoteQuestion.text;
+			qExplanation = remoteQuestion.explanation || '';
 			qPoints = remoteQuestion.points;
 			qTimeLimit = remoteQuestion.timeLimit;
 			mediaType = remoteQuestion.mediaType || 'none';
@@ -63,7 +65,12 @@
 		<Card class="main-card">
 			<div class="field">
 				<label for="q-text">Κείμενο Ερώτησης</label>
-				<textarea id="q-text" name="text" rows="3" bind:value={qText} required></textarea>
+				<input type="text" id="q-text" name="text" bind:value={qText} required placeholder="π.χ. Ποια είναι η πρωτεύουσα της Γαλλίας;" />
+			</div>
+
+			<div class="field">
+				<label for="q-explanation">Επεξηγηματικό Κείμενο (Προαιρετικό)</label>
+				<textarea id="q-explanation" name="explanation" rows="3" bind:value={qExplanation} placeholder="Επιπλέον πληροφορίες ή εισαγωγή για την ερώτηση..."></textarea>
 			</div>
 
 			<div class="meta-grid">

@@ -1,8 +1,35 @@
 import { json } from '@sveltejs/kit';
 import sharp from 'sharp';
-import { writeFile } from 'fs/promises';
 import path from 'path';
 import { auth } from '$lib/server/auth';
+import { db } from '$lib/server/db';
+import { media } from '$lib/server/db/schema';
+import { eq, or, desc } from 'drizzle-orm';
+
+export const GET = async ({ request, url }) => {
+	const session = await auth.api.getSession({ headers: request.headers });
+	if (!session) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	const type = url.searchParams.get('type'); // 'image' or 'video'
+	
+	let query = db.select().from(media);
+	
+	// If not admin, only show own media
+	if (session.user.role !== 'admin') {
+		if (type) {
+			query = query.where(eq(media.ownerId, session.user.id), eq(media.type, type));
+		} else {
+			query = query.where(eq(media.ownerId, session.user.id));
+		}
+	} else if (type) {
+		query = query.where(eq(media.type, type));
+	}
+
+	const results = await query.orderBy(desc(media.createdAt)).all();
+	return json(results);
+};
 
 export const POST = async ({ request }) => {
 	const session = await auth.api.getSession({ headers: request.headers });
@@ -12,48 +39,47 @@ export const POST = async ({ request }) => {
 
 	try {
 		const formData = await request.formData();
-		console.log('Upload request received. FormData keys:', [...formData.keys()]);
-		
 		const file = formData.get('file') || formData.get('image');
 
-		if (!file) {
-			console.error('No file or image field found in FormData');
-			return json({ error: 'No file uploaded' }, { status: 400 });
+		if (!file || !(file instanceof File)) {
+			return json({ error: 'No valid file uploaded' }, { status: 400 });
 		}
-		
-		if (!(file instanceof File)) {
-			console.error('Field found but it is not a File instance');
-			return json({ error: 'Invalid file format' }, { status: 400 });
-		}
-
-		console.log('Processing file:', file.name, 'size:', file.size, 'type:', file.type);
 
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const isVideo = file.type.startsWith('video/');
+		const mediaType = isVideo ? 'video' : 'image';
 		const ext = isVideo ? path.extname(file.name) || '.mp4' : '.webp';
 		const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
 		const uploadPath = path.join(process.cwd(), 'static', 'uploads', filename);
-
-		console.log('Saving to:', uploadPath);
+		const publicUrl = `/uploads/${filename}`;
 
 		if (isVideo) {
-			// Save video directly without sharp
 			const { writeFile } = await import('fs/promises');
 			await writeFile(uploadPath, buffer);
 		} else {
-			// Process image with sharp
 			await sharp(buffer)
 				.webp({ quality: 80 })
 				.toFile(uploadPath);
 		}
 
-		console.log('Upload successful:', filename);
+		// Save to media library
+		const mediaId = Math.random().toString(36).substring(2, 12);
+		await db.insert(media).values({
+			id: mediaId,
+			name: file.name,
+			url: publicUrl,
+			type: mediaType,
+			ownerId: session.user.id,
+			createdAt: new Date()
+		});
+
 		return json({ 
 			success: true, 
-			url: `/uploads/${filename}` 
+			url: publicUrl,
+			id: mediaId
 		});
 	} catch (error) {
-		console.error('CRITICAL Upload error:', error);
+		console.error('Upload error:', error);
 		return json({ error: `Σφάλμα: ${error.message}` }, { status: 500 });
 	}
 };
@@ -65,21 +91,27 @@ export const DELETE = async ({ request }) => {
 	}
 
 	try {
-		const { url } = await request.json();
-		if (!url || !url.startsWith('/uploads/')) {
-			return json({ error: 'Invalid URL' }, { status: 400 });
+		const { url, id } = await request.json();
+		
+		// If ID is provided, verify ownership and delete from DB
+		if (id) {
+			const record = await db.select().from(media).where(eq(media.id, id)).get();
+			if (!record) return json({ error: 'Not found' }, { status: 404 });
+			if (session.user.role !== 'admin' && record.ownerId !== session.user.id) {
+				return json({ error: 'Forbidden' }, { status: 403 });
+			}
+			await db.delete(media).where(eq(media.id, id));
 		}
 
-		const filename = path.basename(url);
-		const filePath = path.join(process.cwd(), 'static', 'uploads', filename);
-
-		// Using fs/promises which is imported as { writeFile } - wait, I need unlink
-		const { unlink } = await import('fs/promises');
-		await unlink(filePath).catch(err => console.error('Delete file error (ignored):', err));
+		if (url && url.startsWith('/uploads/')) {
+			const filename = path.basename(url);
+			const filePath = path.join(process.cwd(), 'static', 'uploads', filename);
+			const { unlink } = await import('fs/promises');
+			await unlink(filePath).catch(err => console.error('File delete error:', err));
+		}
 
 		return json({ success: true });
 	} catch (error) {
-		console.error('Delete error:', error);
-		return json({ error: 'Failed to delete file' }, { status: 500 });
+		return json({ error: 'Failed to delete' }, { status: 500 });
 	}
 };

@@ -26,25 +26,32 @@
 	</header>
 
 	{#if data.activeQuizId}
-		<div class="control-grid">
-			<Card title="Ροή Παιχνιδιού">
-				<div class="button-group">
-					<Button onclick={() => handleCommand('START_QUIZ')} variant="primary">
-						Έναρξη Quiz
+		<div class="control-sections">
+			<Card title="Ροή Παιχνιδιού" class="flow-card">
+				<div class="button-list">
+					<Button onclick={() => handleCommand('SHOW_INTRO')} variant="primary" class="full-width-btn">
+						Αρχική Σελίδα (Intro)
 					</Button>
-					<Button onclick={() => handleCommand('NEXT_QUESTION')} variant="secondary">
-						Επόμενη Ερώτηση
-					</Button>
-					<Button onclick={() => handleCommand('SHOW_LEADERBOARD')} variant="secondary">
-						Εμφάνιση Κατάταξης
-					</Button>
+					
+					<div class="questions-grid">
+						{#each data.questions as q, i}
+							<Button onclick={() => handleCommand('SHOW_QUESTION', { questionId: q.id, index: i })} variant="secondary">
+								Ερώτηση {i + 1}
+							</Button>
+						{/each}
+					</div>
 				</div>
 			</Card>
 
-			<Card title="Σύστημα">
-				<Button onclick={() => handleCommand('RESET_GAME')} variant="danger">
-					Επαναφορά Παιχνιδιού
-				</Button>
+			<Card title="Άλλες Ενέργειες">
+				<div class="button-group">
+					<Button onclick={() => handleCommand('SHOW_LEADERBOARD')} variant="secondary">
+						Εμφάνιση Κατάταξης
+					</Button>
+					<Button onclick={() => handleCommand('RESET_GAME')} variant="danger">
+						Επαναφορά Παιχνιδιού
+					</Button>
+				</div>
 			</Card>
 		</div>
 	{:else}
@@ -76,16 +83,34 @@
 		color: #6b7280;
 	}
 
-	.control-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	.control-sections {
+		display: flex;
+		flex-direction: column;
 		gap: 2rem;
+	}
+
+	.button-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.questions-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 0.75rem;
 	}
 
 	.button-group {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+
+	:global(.full-width-btn) {
+		width: 100% !important;
+		padding: 1.25rem !important;
+		font-size: 1.1rem !important;
 	}
 
 	.warning-card {
