@@ -4,13 +4,15 @@ import { config } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from '@sveltejs/kit';
 
-export const load = async ({ request }) => {
+export const load = async ({ request, url }) => {
 	const session = await auth.api.getSession({
 		headers: request.headers
 	});
 
-	// Redirect management roles
-	if (session?.user?.role === 'admin' || session?.user?.role === 'quizmaster') {
+	const isPreview = url.searchParams.has('preview');
+
+	// Redirect management roles only if not in preview mode
+	if (!isPreview && (session?.user?.role === 'admin' || session?.user?.role === 'quizmaster')) {
 		throw redirect(302, '/quizmaster');
 	}
 

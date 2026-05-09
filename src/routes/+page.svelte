@@ -1,5 +1,4 @@
 <script>
-	import Button from '$lib/components/Button.svelte';
 	let { data } = $props();
 </script>
 
@@ -14,6 +13,13 @@
 			<Button href="/login" variant="primary" size="large">
 				Συνδεθείτε για να παίξετε!
 			</Button>
+		</div>
+	{/if}
+
+	{#if data.user && (data.user.role === 'admin' || data.user.role === 'quizmaster')}
+		<div class="admin-quick-links">
+			<a href="/quizmaster" class="quick-link">Dashboard</a>
+			<a href="/display" class="quick-link">Display</a>
 		</div>
 	{/if}
 </div>
@@ -38,7 +44,7 @@
 	h1 {
 		font-size: 3.5rem;
 		color: #111827;
-		margin-bottom: 1rem;
+		margin: 0 0 1rem;
 		font-weight: 800;
 		line-height: 1.2;
 	}
@@ -52,6 +58,33 @@
 
 	.cta-section {
 		margin-top: 1rem;
+	}
+
+	.admin-quick-links {
+		position: fixed;
+		bottom: 2rem;
+		left: 2rem;
+		display: flex;
+		gap: 1rem;
+	}
+
+	.quick-link {
+		background: rgba(255, 255, 255, 0.9);
+		padding: 0.5rem 1rem;
+		border-radius: 8px;
+		text-decoration: none;
+		color: #374151;
+		font-size: 0.8rem;
+		font-weight: 600;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid #e5e7eb;
+		transition: all 0.2s;
+	}
+
+	.quick-link:hover {
+		background: white;
+		transform: translateY(-2px);
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 	}
 
 	@media (max-width: 768px) {
