@@ -20,7 +20,7 @@
 			<iframe 
 				width="100%" 
 				height="100%" 
-				src="https://www.youtube.com/embed/{youtubeId}" 
+				src="https://www.youtube.com/embed/{youtubeId}?controls=0&enablejsapi=1" 
 				title="YouTube video player" 
 				frameborder="0" 
 				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -28,7 +28,7 @@
 			></iframe>
 		</div>
 	{:else if type === 'video_file' || (type === 'video' && url && url.endsWith('.mp4'))}
-		<video controls width="100%">
+		<video width="100%" playsinline>
 			<source src={url} type="video/mp4" />
 			<track kind="captions" />
 			Το πρόγραμμα περιήγησής σας δεν υποστηρίζει το βίντεο.

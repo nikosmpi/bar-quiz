@@ -6,8 +6,9 @@
 	let { data } = $props();
 	
 	let gameState = $state({
-		type: 'intro', // 'intro', 'card', 'question', 'leaderboard'
-		content: null
+		type: 'intro', // 'intro', 'card', 'question', 'leaderboard', 'prep'
+		content: null,
+		questionNumber: 0
 	});
 
 	onMount(() => {
@@ -19,12 +20,14 @@
 				console.log('Controller Received Update:', update);
 				
 				if (update.command === 'SHOW_INTRO') {
-					gameState = { type: 'intro', content: null };
+					gameState = { type: 'intro', content: null, questionNumber: 0 };
+				} else if (update.command === 'PREPARE_QUESTION') {
+					gameState = { type: 'prep', content: null, questionNumber: update.payload.number };
 				} else if (update.command === 'SHOW_CONTENT') {
 					const item = data.questions[update.payload.index];
-					gameState = { type: item.type, content: item };
+					gameState = { type: item.type, content: item, questionNumber: 0 };
 				} else if (update.command === 'SHOW_LEADERBOARD') {
-					gameState = { type: 'leaderboard', content: null };
+					gameState = { type: 'leaderboard', content: null, questionNumber: 0 };
 				}
 			});
 		}
@@ -45,6 +48,18 @@
 						<span class="status-icon pulse">⏳</span>
 						<h3>Περιμένετε να ξεκινήσει το quiz...</h3>
 						<p>Η ροή του παιχνιδιού ελέγχεται από τον Quizmaster.</p>
+					</div>
+				</Card>
+			</div>
+
+		{:else if gameState.type === 'prep'}
+			<div class="attention-screen">
+				<Card>
+					<div class="attention-content">
+						<span class="status-icon pulse">🎯</span>
+						<h3>Προετοιμαστείτε!</h3>
+						<p class="item-title">Ερώτηση #{gameState.questionNumber}</p>
+						<p class="sub-text">Η ερώτηση θα εμφανιστεί σύντομα στην οθόνη σας.</p>
 					</div>
 				</Card>
 			</div>

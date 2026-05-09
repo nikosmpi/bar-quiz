@@ -1,7 +1,6 @@
 <script>
 	import favicon from '$lib/assets/favicon.svg';
 	import Navigation from '$lib/components/Navigation.svelte';
-
 	import { page } from '$app/stores';
 
 	let { children } = $props();
@@ -21,6 +20,10 @@
 </main>
 
 <style>
+	:global(*), :global(*::before), :global(*::after) {
+		box-sizing: border-box;
+	}
+
 	:global(html), :global(body) {
 		margin: 0;
 		padding: 0;
