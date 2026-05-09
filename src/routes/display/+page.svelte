@@ -1,10 +1,26 @@
 <script>
-	// Display Page Placeholder
+	import { onMount } from 'svelte';
+	import { getSocket, joinRoom } from '$lib/socket-client';
+
+	let { data } = $props();
+	let status = $state('Αναμονή για έναρξη...');
+
+	onMount(() => {
+		if (data.activeQuizId) {
+			joinRoom(data.activeQuizId);
+			
+			const socket = getSocket();
+			socket.on('game-update', (data) => {
+				status = `Εντολή: ${data.command}`;
+				console.log('Display Received Update:', data);
+			});
+		}
+	});
 </script>
 
 <div class="display-container">
 	<h1>Quiz Display</h1>
-	<p>Εδώ θα εμφανίζεται το quiz για το κοινό.</p>
+	<p class="status">{status}</p>
 </div>
 
 <style>
@@ -28,8 +44,11 @@
 		margin-bottom: 2rem;
 	}
 
-	p {
-		font-size: 1.5rem;
-		opacity: 0.8;
+	.status {
+		font-size: 2.5rem;
+		color: #10b981;
+		font-weight: bold;
+		text-transform: uppercase;
+		letter-spacing: 2px;
 	}
 </style>
