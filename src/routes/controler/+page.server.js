@@ -1,8 +1,8 @@
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { quiz, config, question, option } from '$lib/server/db/schema';
+import { quiz, config, question, option, answer } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 
 export const load = async ({ request }) => {
 	const session = await auth.api.getSession({
@@ -18,6 +18,8 @@ export const load = async ({ request }) => {
 
 	let questions = [];
 	let activeQuiz = null;
+	let userAnswers = [];
+
 	if (activeQuizId) {
 		activeQuiz = await db.select().from(quiz).where(eq(quiz.id, activeQuizId)).get();
 		const rawQuestions = await db.select().from(question)
@@ -31,12 +33,21 @@ export const load = async ({ request }) => {
 				.orderBy(asc(option.order));
 			return { ...q, options };
 		}));
+
+		// Fetch existing answers for this user in this quiz
+		userAnswers = await db.select().from(answer).where(
+			and(
+				eq(answer.quizId, activeQuizId),
+				eq(answer.userId, session.user.id)
+			)
+		);
 	}
 
 	return {
 		user: session.user,
 		activeQuizId,
 		activeQuiz,
-		questions
+		questions,
+		userAnswers
 	};
 };

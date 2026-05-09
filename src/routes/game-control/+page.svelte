@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { joinRoom, sendCommand, getSocket } from '$lib/socket-client';
 	import Button from '$lib/components/Button.svelte';
 	import Card from '$lib/components/Card.svelte';
@@ -8,13 +8,17 @@
 
 	let { data } = $props();
 
+	let questions = $state(data.questions);
 	let selectedIndex = $state(-1); // -1 for Intro, 0+ for questions/cards
 	let liveIndex = $state(-2); // Tracks what is currently live on Display
 	let isPreparing = $state(false); // Tracks if we are in preparation mode for a question
 	
 	let connectedUsers = $state([]); // Real-time users list
+	let dashboardTimer = $state(0); // Synced timer for auto-completion
+	let timerInterval;
 
-	let selectedItem = $derived(selectedIndex === -1 ? { type: 'intro', text: 'Αρχική Σελίδα (Intro)' } : data.questions[selectedIndex]);
+	let totalQuestions = $derived(questions.filter(q => q.type === 'question').length);
+	let selectedItem = $derived(selectedIndex === -1 ? { type: 'intro', text: 'Αρχική Σελίδα (Intro)' } : questions[selectedIndex]);
 
 	onMount(() => {
 		if (data.activeQuizId) {
@@ -23,10 +27,31 @@
 			const socket = getSocket();
 			// Listen for users in the room
 			socket.on('room-users-update', (users) => {
+				console.log('Users update received:', users);
 				connectedUsers = users;
 			});
 		}
 	});
+
+	onDestroy(() => {
+		if (timerInterval) clearInterval(timerInterval);
+	});
+
+	async function updateItemStatus(questionId, status) {
+		if (!questionId) return;
+		try {
+			await fetch('/api/game/update-status', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ questionId, status })
+			});
+			// Update local state to reflect DB change
+			const idx = questions.findIndex(q => q.id === questionId);
+			if (idx !== -1) questions[idx].status = status;
+		} catch (err) {
+			console.error('Failed to update status:', err);
+		}
+	}
 
 	function handleCommand(command, payload = {}) {
 		if (data.activeQuizId) {
@@ -34,36 +59,110 @@
 		}
 	}
 
+	async function resetGame() {
+		if (!confirm('Είστε σίγουροι ότι θέλετε να κάνετε reset; Όλα τα status και οι απαντήσεις θα διαγραφούν!')) return;
+		
+		try {
+			const res = await fetch('/api/game/reset', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ quizId: data.activeQuizId })
+			});
+			
+			if (res.ok) {
+				// Update local state
+				questions = questions.map(q => ({ ...q, status: 'pending' }));
+				selectedIndex = -1;
+				liveIndex = -2;
+				isPreparing = false;
+				if (timerInterval) clearInterval(timerInterval);
+				dashboardTimer = 0;
+				
+				// Notify others
+				handleCommand('RESET_GAME');
+				handleCommand('SHOW_INTRO');
+				alert('Το Quiz έγινε reset επιτυχώς!');
+			}
+		} catch (err) {
+			console.error('Reset failed:', err);
+		}
+	}
+
+	function selectNext() {
+		if (selectedIndex < questions.length - 1) {
+			selectedIndex += 1;
+		}
+	}
+
+	function startDashboardTimer(duration, questionId) {
+		if (timerInterval) clearInterval(timerInterval);
+		dashboardTimer = duration;
+		
+		timerInterval = setInterval(async () => {
+			if (dashboardTimer > 0) {
+				dashboardTimer -= 1;
+			} else {
+				clearInterval(timerInterval);
+				// Automatically mark as completed when time runs out
+				await updateItemStatus(questionId, 'completed');
+				selectNext();
+			}
+		}, 1000);
+	}
+
 	function sendVideoAction(action, value = 0) {
 		handleCommand('VIDEO_CONTROL', { action, value });
 	}
 
-	function prepareQuestion() {
+	async function prepareQuestion() {
 		isPreparing = true;
+		await updateItemStatus(selectedItem.id, 'preparing');
 		handleCommand('PREPARE_QUESTION', { 
 			index: selectedIndex,
 			number: getQuestionNumber(selectedIndex),
-			item: selectedItem // Send full item just in case
+			item: selectedItem
 		});
 	}
 
-	function goLive() {
+	async function goLive() {
 		liveIndex = selectedIndex;
 		isPreparing = false;
+		
 		if (selectedIndex === -1) {
 			handleCommand('SHOW_INTRO');
+			if (timerInterval) clearInterval(timerInterval);
+			dashboardTimer = 0;
 		} else {
+			await updateItemStatus(selectedItem.id, 'active');
 			handleCommand('SHOW_CONTENT', { 
 				id: selectedItem.id, 
 				type: selectedItem.type,
 				index: selectedIndex,
-				item: selectedItem // Send the full object including options
+				item: selectedItem
 			});
+
+			// If it's a question, start the dashboard timer (5s countdown + timeLimit)
+			if (selectedItem.type === 'question') {
+				// Total time = 5s (display countdown) + question limit
+				startDashboardTimer(selectedItem.timeLimit + 5, selectedItem.id);
+			} else {
+				if (timerInterval) clearInterval(timerInterval);
+				dashboardTimer = 0;
+			}
+		}
+	}
+
+	async function markCompleted() {
+		if (selectedIndex >= 0) {
+			if (timerInterval) clearInterval(timerInterval);
+			dashboardTimer = 0;
+			await updateItemStatus(selectedItem.id, 'completed');
+			selectNext();
 		}
 	}
 
 	function getQuestionNumber(index) {
-		const questionsBefore = data.questions.slice(0, index + 1).filter(q => q.type === 'question');
+		const questionsBefore = questions.slice(0, index + 1).filter(q => q.type === 'question');
 		return questionsBefore.length;
 	}
 
@@ -77,7 +176,7 @@
 
 <div class="game-control-dashboard">
 	{#if data.activeQuizId}
-		<!-- Left Sidebar: Quiz Flow (Light Theme) -->
+		<!-- Left Sidebar: Quiz Flow -->
 		<aside class="sidebar flow-sidebar">
 			<div class="sidebar-header">
 				<div class="brand">
@@ -101,20 +200,30 @@
 
 				<div class="nav-divider">Περιεχόμενο Quiz</div>
 
-				{#each data.questions as item, i}
+				{#each questions as item, i}
 					<button 
 						class="nav-item" 
 						class:active={selectedIndex === i}
 						class:is-live={liveIndex === i}
-						class:type-card={item.type === 'card'}
+						class:completed={item.status === 'completed'}
 						onclick={() => selectedIndex = i}
 					>
-						<span class="type-icon">{item.type === 'card' ? '📋' : '❓'}</span>
+						<span class="type-icon">
+							{#if item.status === 'completed'}
+								✅
+							{:else}
+								{item.type === 'card' ? '📋' : '❓'}
+							{/if}
+						</span>
 						<div class="item-meta">
 							<span class="label">{item.text}</span>
 							<div class="sub-meta">
 								<span class="type-text">{item.type === 'card' ? 'Κάρτα' : 'Ερώτηση'}</span>
-								{#if liveIndex === i}<span class="live-tag small">LIVE</span>{/if}
+								{#if liveIndex === i}
+									<span class="live-tag small">LIVE</span>
+								{:else if item.status === 'completed'}
+									<span class="done-tag">DONE</span>
+								{/if}
 							</div>
 						</div>
 					</button>
@@ -131,7 +240,7 @@
 				</div>
 				<div class="header-actions">
 					<Button onclick={() => handleCommand('SHOW_LEADERBOARD')} variant="secondary">📊 Leaderboard</Button>
-					<Button onclick={() => handleCommand('RESET_GAME')} variant="danger">🔄 Reset</Button>
+					<Button onclick={resetGame} variant="danger">🔄 Reset</Button>
 				</div>
 			</header>
 
@@ -142,11 +251,19 @@
 							<Badge variant={selectedItem.type === 'intro' ? 'default' : (selectedItem.type === 'card' ? 'primary' : 'success')}>
 								{selectedItem.type.toUpperCase()}
 							</Badge>
-							{#if liveIndex === selectedIndex && !isPreparing}
-								<span class="live-indicator">● LIVE ΤΩΡΑ</span>
-							{:else if isPreparing}
-								<span class="prep-indicator">⏳ ΠΡΟΕΤΟΙΜΑΣΙΑ...</span>
-							{/if}
+							<div class="status-indicators">
+								{#if liveIndex === selectedIndex && dashboardTimer > 0}
+									<span class="live-timer-badge">⏱ {dashboardTimer}s</span>
+								{/if}
+								{#if liveIndex === selectedIndex && !isPreparing}
+									<span class="live-indicator">● LIVE ΤΩΡΑ</span>
+								{:else if isPreparing}
+									<span class="prep-indicator">⏳ ΠΡΟΕΤΟΙΜΑΣΙΑ...</span>
+								{/if}
+								{#if selectedItem.status === 'completed'}
+									<span class="completed-badge">ΟΛΟΚΛΗΡΩΘΗΚΕ</span>
+								{/if}
+							</div>
 						</div>
 						
 						<h2 class="preview-title">{selectedItem.text}</h2>
@@ -191,21 +308,28 @@
 						</div>
 
 						<div class="main-action-group">
-							{#if selectedItem.type === 'question' && !isPreparing && liveIndex !== selectedIndex}
-								<button class="mega-live-btn prep" onclick={prepareQuestion}>
-									<span class="icon">⏳</span> ΠΡΟΕΤΟΙΜΑΣΙΑ
-								</button>
-							{:else}
-								<button class="mega-live-btn" class:is-live={liveIndex === selectedIndex && !isPreparing} onclick={goLive}>
-									<span class="bolt">⚡</span>
-									{liveIndex === selectedIndex && !isPreparing ? 'ΑΝΑΝΕΩΣΗ LIVE' : 'ΕΜΦΑΝΙΣΗ ΣΤΗΝ ΟΘΟΝΗ'}
+							<div class="primary-actions">
+								{#if selectedItem.type === 'question' && !isPreparing && liveIndex !== selectedIndex}
+									<button class="mega-live-btn prep" onclick={prepareQuestion}>
+										<span class="icon">⏳</span> ΠΡΟΕΤΟΙΜΑΣΙΑ
+									</button>
+								{:else}
+									<button class="mega-live-btn" class:is-live={liveIndex === selectedIndex && !isPreparing} onclick={goLive}>
+										<span class="bolt">⚡</span>
+										{liveIndex === selectedIndex && !isPreparing ? 'ΑΝΑΝΕΩΣΗ LIVE' : 'ΕΜΦΑΝΙΣΗ ΣΤΗΝ ΟΘΟΝΗ'}
+									</button>
+								{/if}
+							</div>
+							
+							{#if selectedIndex >= 0}
+								<button class="complete-btn" onclick={markCompleted} title="Σήμανση ως ολοκληρωμένο">
+									✓ ΟΛΟΚΛΗΡΩΣΗ
 								</button>
 							{/if}
 						</div>
 					</Card>
 				</section>
 
-				<!-- Video Controls moved to the bottom -->
 				<section class="video-controls-section">
 					{#if selectedItem.type === 'card' && (selectedItem.mediaType === 'video' || selectedItem.mediaType === 'video_file')}
 						<Card class="video-control-card">
@@ -241,7 +365,13 @@
 					{#each connectedUsers as user}
 						<div class="user-row">
 							<UserAvatar {user} size="32px" />
-							<span class="user-name">{user.username || user.name}</span>
+							<div class="user-info-row">
+								<span class="user-name">{user.username || user.name}</span>
+								<div class="user-stats">
+									<span class="stat-count">{user.answerCount || 0} / {totalQuestions}</span>
+									<span class="stat-label">απαντήσεις</span>
+								</div>
+							</div>
 							<span class="user-status-dot"></span>
 						</div>
 					{/each}
@@ -265,7 +395,7 @@
 
 	.game-control-dashboard { display: flex; height: calc(100vh - 5rem); background: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
 
-	/* Sidebars Shared */
+	/* Sidebars */
 	.sidebar { width: 300px; background: white; color: #1e293b; display: flex; flex-direction: column; }
 	.sidebar-header { padding: 1.25rem; background: #fff; border-bottom: 1px solid #f1f5f9; }
 	.sidebar-header h2 { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 800; }
@@ -281,26 +411,28 @@
 	.nav-item:hover { background: #f1f5f9; color: #1e293b; }
 	.nav-item.active { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
 	.nav-item.is-live { border-right: 4px solid #ef4444; }
-	.item-meta .label { 
-		font-size: 0.9rem; 
-		font-weight: 600; 
-		color: #334155;
-		line-height: 1.3;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
+	.nav-item.completed { opacity: 0.8; }
+	
+	.item-meta .label { font-size: 0.9rem; font-weight: 600; color: #334155; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 	.sub-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem; }
 	.type-text { font-size: 0.65rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
 	.live-tag { font-size: 0.55rem; background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-weight: 900; }
+	.done-tag { font-size: 0.55rem; background: #10b981; color: white; padding: 1px 4px; border-radius: 4px; font-weight: 900; }
 	.nav-divider { padding: 1.25rem 0.5rem 0.5rem; font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
 
 	/* Users List */
-	.users-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-	.user-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 10px; border: 1px solid #f1f5f9; }
-	.user-name { font-size: 0.85rem; font-weight: 600; color: #334155; flex: 1; }
-	.user-status-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; }
+	.users-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+	.user-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; transition: all 0.2s; }
+	.user-row:hover { background: white; border-color: #e2e8f0; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+	
+	.user-info-row { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
+	.user-name { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+	
+	.user-stats { display: flex; align-items: center; gap: 0.35rem; }
+	.stat-count { font-size: 0.75rem; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 0 0.4rem; border-radius: 4px; }
+	.stat-label { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: lowercase; }
+
+	.user-status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
 	.empty-users { text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 2rem; }
 
 	/* Main Panel */
@@ -313,8 +445,11 @@
 
 	/* Preview Card */
 	.preview-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+	.status-indicators { display: flex; gap: 1rem; align-items: center; }
 	.live-indicator { color: #ef4444; font-weight: 800; font-size: 0.75rem; animation: blink 1s infinite; }
+	.live-timer-badge { background: #0f172a; color: white; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 900; font-size: 0.8rem; border: 1px solid #2563eb; }
 	.prep-indicator { color: #f59e0b; font-weight: 800; font-size: 0.75rem; }
+	.completed-badge { background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 900; padding: 0.25rem 0.6rem; border-radius: 6px; }
 	@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 	.preview-title { font-size: 1.5rem; color: #1e293b; margin: 0 0 1.25rem; line-height: 1.2; }
@@ -325,13 +460,17 @@
 	.opt-item { padding: 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; color: #475569; }
 	.opt-item.is-correct { background: #f0fdf4; border-color: #4ade80; color: #166534; font-weight: 600; }
 
-	.main-action-group { display: flex; flex-direction: column; gap: 1rem; }
+	.main-action-group { display: flex; gap: 1rem; }
+	.primary-actions { flex: 1; }
 	.mega-live-btn { width: 100%; padding: 1.25rem; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 1rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
 	.mega-live-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(37,99,235,0.3); }
 	.mega-live-btn.prep { background: #f59e0b; }
 	.mega-live-btn.is-live { background: #ef4444; }
 
-	/* Video Controls Horizontal */
+	.complete-btn { padding: 0 1.5rem; background: #f1f5f9; color: #475569; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+	.complete-btn:hover { background: #10b981; color: white; border-color: #10b981; }
+
+	/* Video Controls */
 	:global(.video-control-card) { padding: 1rem !important; background: #0f172a !important; color: white !important; border: none !important; }
 	.video-console-horizontal { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
 	.console-label { font-size: 0.7rem; font-weight: 900; color: #475569; letter-spacing: 1px; }

@@ -82,6 +82,7 @@ export const question = sqliteTable('question', {
 	mediaUrl: text('media_url'),
 	points: integer('points').notNull().default(1),
 	timeLimit: integer('time_limit').notNull().default(30), // in seconds
+	status: text('status').notNull().default('pending'), // 'pending', 'preparing', 'active', 'completed'
 	order: integer('order').notNull().default(0),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
@@ -106,4 +107,22 @@ export const media = sqliteTable('media', {
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const answer = sqliteTable('answer', {
+	id: text('id').primaryKey(),
+	quizId: text('quiz_id')
+		.notNull()
+		.references(() => quiz.id, { onDelete: 'cascade' }),
+	questionId: text('question_id')
+		.notNull()
+		.references(() => question.id, { onDelete: 'cascade' }),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	optionId: text('option_id')
+		.notNull()
+		.references(() => option.id, { onDelete: 'cascade' }),
+	points: integer('points').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

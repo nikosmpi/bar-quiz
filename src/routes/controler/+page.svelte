@@ -14,12 +14,35 @@
 	let countdown = $state(5);
 	let questionTimer = $state(0);
 	let selectedOptionId = $state(null);
+	let userAnswers = $state(data.userAnswers || []);
 	let timerInterval;
+
+	// Check if current question is already answered
+	let isAlreadyAnswered = $derived(
+		gameState.type === 'question' && 
+		gameState.content && 
+		userAnswers.some(a => a.questionId === gameState.content.id)
+	);
+
+	// Get the selected option ID for the current question if it exists
+	let previouslySelectedId = $derived(
+		gameState.content ? userAnswers.find(a => a.questionId === gameState.content.id)?.optionId : null
+	);
+
+	$effect(() => {
+		if (previouslySelectedId) {
+			selectedOptionId = previouslySelectedId;
+		}
+	});
 
 	function startQuestionTimer() {
 		if (timerInterval) clearInterval(timerInterval);
 		questionTimer = gameState.content?.timeLimit || 30;
-		selectedOptionId = null; // Reset selection for new question
+		
+		// Reset local selection ONLY if not already answered
+		if (!isAlreadyAnswered) {
+			selectedOptionId = null;
+		}
 		
 		timerInterval = setInterval(() => {
 			if (questionTimer > 0) {
@@ -50,7 +73,7 @@
 
 	onMount(() => {
 		if (data.activeQuizId) {
-			joinRoom(data.activeQuizId);
+			joinRoom(data.activeQuizId, data.user);
 			
 			const socket = getSocket();
 			socket.on('game-update', (update) => {
@@ -58,12 +81,14 @@
 				
 				if (update.command === 'SHOW_INTRO') {
 					gameState = { type: 'intro', content: null, questionNumber: 0 };
+				} else if (update.command === 'RESET_GAME') {
+					userAnswers = [];
+					selectedOptionId = null;
+					gameState = { type: 'intro', content: null, questionNumber: 0 };
 				} else if (update.command === 'PREPARE_QUESTION') {
-					// Use item from payload if available, else fallback to local data
 					const q = update.payload.item || data.questions[update.payload.index];
 					gameState = { type: 'prep', content: q, questionNumber: update.payload.number };
 				} else if (update.command === 'SHOW_CONTENT') {
-					// Use item from payload if available, else fallback to local data
 					const item = update.payload.item || data.questions[update.payload.index];
 					if (item.type === 'question') {
 						startCountdown(item);
@@ -77,11 +102,46 @@
 		}
 	});
 
-	function submitAnswer(optionId) {
-		if (gameState.type !== 'question' || questionTimer <= 0) return;
+	async function submitAnswer(optionId) {
+		if (gameState.type !== 'question' || questionTimer <= 0 || selectedOptionId || isAlreadyAnswered) return;
+		
 		selectedOptionId = optionId;
-		console.log('Answer selected:', optionId);
-		// Future: Emit SUBMIT_ANSWER to socket
+		
+		try {
+			const response = await fetch('/api/game/answer', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					quizId: data.activeQuizId,
+					questionId: gameState.content.id,
+					optionId: optionId
+				})
+			});
+			
+			const result = await response.json();
+			if (!response.ok) {
+				console.error('Error submitting answer:', result.error);
+				// If server says already answered, update local state to reflect
+				if (response.status === 409) {
+					// We should probably re-fetch answers or just trust server
+				}
+			} else {
+				console.log('Answer saved successfully:', result);
+				// Add to local answers to lock UI
+				userAnswers.push({
+					questionId: gameState.content.id,
+					optionId: optionId
+				});
+				
+				// Emit event to update count on Quizmaster dashboard
+				const socket = getSocket();
+				if (socket) {
+					socket.emit('answer-submitted', { roomId: data.activeQuizId });
+				}
+			}
+		} catch (err) {
+			console.error('Network error while submitting answer:', err);
+		}
 	}
 </script>
 
@@ -138,7 +198,7 @@
 		{:else if gameState.type === 'question'}
 			<div class="question-screen">
 				<div class="question-meta-row">
-					<span class="q-number-badge">Ερώτηση #{data.questions.filter((q,i) => i <= data.questions.findIndex(x => x.id === gameState.content.id) && q.type === 'question').length}</span>
+					<span class="q-number-badge">Ερώτηση</span>
 					<span class="timer-badge" class:low={questionTimer <= 5}>{questionTimer}s</span>
 				</div>
 
@@ -147,7 +207,7 @@
 						<button 
 							class="option-btn color-{i}" 
 							class:selected={selectedOptionId === opt.id}
-							disabled={selectedOptionId !== null}
+							disabled={selectedOptionId !== null || isAlreadyAnswered}
 							onclick={() => submitAnswer(opt.id)}
 						>
 							<span class="letter">{String.fromCharCode(65 + i)}</span>
@@ -161,7 +221,7 @@
 					{/each}
 				</div>
 
-				{#if selectedOptionId}
+				{#if selectedOptionId || isAlreadyAnswered}
 					<div class="answer-feedback">
 						<p>Η απάντησή σας καταχωρήθηκε!</p>
 					</div>
@@ -174,7 +234,7 @@
 					<div class="timesup-content">
 						<span class="status-icon">⌛</span>
 						<h3>ΤΕΛΟΣ ΧΡΟΝΟΥ</h3>
-						<p>{selectedOptionId ? 'Η απάντησή σας υποβλήθηκε.' : 'Δεν προλάβατε να απαντήσετε.'}</p>
+						<p>{(selectedOptionId || isAlreadyAnswered) ? 'Η απάντησή σας υποβλήθηκε.' : 'Δεν προλάβατε να απαντήσετε.'}</p>
 					</div>
 				</Card>
 			</div>
@@ -252,9 +312,6 @@
 	.timer-badge { background: #0f172a; color: white; padding: 0.4rem 1rem; border-radius: 999px; font-weight: 800; font-size: 1rem; border: 2px solid #2563eb; }
 	.timer-badge.low { background: #ef4444; border-color: #fca5a5; animation: blink 0.5s infinite; }
 	@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-	.question-text-box { margin-bottom: 2rem; text-align: center; }
-	.question-text-box h3 { font-size: 1.5rem; margin: 0; }
 
 	.options-grid {
 		display: grid;

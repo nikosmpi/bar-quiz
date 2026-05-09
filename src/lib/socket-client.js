@@ -14,9 +14,12 @@ export const getSocket = () => {
 	return socket;
 };
 
-export const joinRoom = (roomId) => {
+export const joinRoom = (roomId, userData = null) => {
 	const s = getSocket();
-	if (s) s.emit('join-room', roomId);
+	if (s) {
+		console.log(`Joining room ${roomId}`, userData);
+		s.emit('join-room', { roomId, userData });
+	}
 };
 
 export const sendCommand = (roomId, command, payload = {}) => {
