@@ -42,19 +42,25 @@
 			<div class="waiting-screen">
 				<Card>
 					<div class="waiting-content">
-						<span class="pulse-icon">⏳</span>
+						<span class="status-icon pulse">⏳</span>
 						<h3>Περιμένετε να ξεκινήσει το quiz...</h3>
 						<p>Η ροή του παιχνιδιού ελέγχεται από τον Quizmaster.</p>
 					</div>
 				</Card>
 			</div>
+
 		{:else if gameState.type === 'card'}
-			<div class="card-screen">
+			<div class="attention-screen">
 				<Card>
-					<h3>{gameState.content.text}</h3>
-					<p>Παρακολουθήστε την οθόνη προβολής για περισσότερες πληροφορίες.</p>
+					<div class="attention-content">
+						<span class="status-icon bounce">📺</span>
+						<h3>Δείτε την κεντρική οθόνη</h3>
+						<p class="item-title">"{gameState.content.text}"</p>
+						<p class="sub-text">Ο Quizmaster προβάλλει πληροφορίες αυτή τη στιγμή.</p>
+					</div>
 				</Card>
 			</div>
+
 		{:else if gameState.type === 'question'}
 			<div class="question-screen">
 				<Card>
@@ -66,11 +72,15 @@
 					<!-- Answers will go here later -->
 				</Card>
 			</div>
+
 		{:else if gameState.type === 'leaderboard'}
-			<div class="leaderboard-screen">
+			<div class="attention-screen">
 				<Card>
-					<h3>Κατάταξη</h3>
-					<p>Δείτε τη θέση σας στη μεγάλη οθόνη!</p>
+					<div class="attention-content">
+						<span class="status-icon pulse">🏆</span>
+						<h3>Δείτε την κεντρική οθόνη</h3>
+						<p class="sub-text">Η κατάταξη εμφανίζεται στη μεγάλη οθόνη!</p>
+					</div>
 				</Card>
 			</div>
 		{/if}
@@ -97,17 +107,19 @@
 	.quiz-header h2 { margin: 0; color: #111827; font-size: 1.25rem; }
 	.user-info { margin: 0.5rem 0 0; color: #6b7280; font-size: 0.9rem; }
 
-	.waiting-content {
+	.waiting-content, .attention-content {
 		text-align: center;
-		padding: 2rem 1rem;
+		padding: 2.5rem 1rem;
 	}
 
-	.pulse-icon {
-		font-size: 3rem;
+	.status-icon {
+		font-size: 4rem;
 		display: block;
-		margin-bottom: 1rem;
-		animation: pulse 2s infinite;
+		margin-bottom: 1.5rem;
 	}
+
+	.status-icon.pulse { animation: pulse 2s infinite; }
+	.status-icon.bounce { animation: bounce 2s infinite; }
 
 	@keyframes pulse {
 		0% { transform: scale(1); opacity: 1; }
@@ -115,8 +127,25 @@
 		100% { transform: scale(1); opacity: 1; }
 	}
 
-	.waiting-content h3 { color: #111827; margin: 0 0 1rem; }
-	.waiting-content p { color: #6b7280; font-size: 0.95rem; margin: 0; }
+	@keyframes bounce {
+		0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+		40% {transform: translateY(-20px);}
+		60% {transform: translateY(-10px);}
+	}
+
+	h3 { color: #111827; margin: 0 0 1rem; font-size: 1.5rem; font-weight: 800; }
+	p { color: #6b7280; font-size: 1rem; margin: 0; line-height: 1.5; }
+	
+	.item-title {
+		font-weight: 600;
+		color: #2563eb;
+		margin-bottom: 0.5rem !important;
+	}
+
+	.sub-text {
+		font-size: 0.9rem !important;
+		opacity: 0.8;
+	}
 
 	.q-label {
 		display: inline-block;
@@ -132,7 +161,4 @@
 
 	.question-info h3 { margin: 0; font-size: 1.5rem; color: #111827; line-height: 1.3; }
 	.instructions { margin-top: 2rem; color: #6b7280; font-style: italic; }
-
-	.card-screen h3, .leaderboard-screen h3 { text-align: center; color: #111827; }
-	.card-screen p, .leaderboard-screen p { text-align: center; color: #6b7280; }
 </style>
