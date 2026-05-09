@@ -4,6 +4,7 @@
 
 	let { 
 		type = 'image', // 'image' or 'video'
+		context = '',   // e.g., 'profile'
 		onSelect, 
 		onClose 
 	} = $props();
@@ -48,7 +49,7 @@
 		formData.append('file', file);
 
 		try {
-			const response = await fetch('/api/upload', {
+			const response = await fetch(`/api/upload?context=${context}`, {
 				method: 'POST',
 				body: formData
 			});

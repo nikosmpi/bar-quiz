@@ -31,7 +31,7 @@ export const GET = async ({ request, url }) => {
 	return json(results);
 };
 
-export const POST = async ({ request }) => {
+export const POST = async ({ request, url }) => {
 	const session = await auth.api.getSession({ headers: request.headers });
 	if (!session) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,6 +40,7 @@ export const POST = async ({ request }) => {
 	try {
 		const formData = await request.formData();
 		const file = formData.get('file') || formData.get('image');
+		const context = url.searchParams.get('context') || ''; // e.g., 'profile'
 
 		if (!file || !(file instanceof File)) {
 			return json({ error: 'No valid file uploaded' }, { status: 400 });
@@ -57,7 +58,17 @@ export const POST = async ({ request }) => {
 			const { writeFile } = await import('fs/promises');
 			await writeFile(uploadPath, buffer);
 		} else {
-			await sharp(buffer)
+			let pipeline = sharp(buffer);
+			
+			// If it's a profile picture, resize to 200x200
+			if (context === 'profile') {
+				pipeline = pipeline.resize(200, 200, {
+					fit: 'cover',
+					position: 'center'
+				});
+			}
+
+			await pipeline
 				.webp({ quality: 80 })
 				.toFile(uploadPath);
 		}

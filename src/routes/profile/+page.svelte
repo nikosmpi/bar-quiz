@@ -108,6 +108,7 @@
 {#if showPicker}
 	<MediaPicker 
 		type="image" 
+		context="profile"
 		onSelect={handleMediaSelect} 
 		onClose={() => showPicker = false} 
 	/>
