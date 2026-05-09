@@ -7,9 +7,13 @@
 
 	let { data } = $props();
 	let activeQuizLoading = $state(false);
+	let homeContentLoading = $state(false);
 
 	let selectedQuizId = $state(data.activeQuizId || "");
 	let coverImageUrl = $state(data.activeQuiz?.coverImage || "");
+
+	let homeTitle = $state(data.homeTitle);
+	let homeSubtitle = $state(data.homeSubtitle);
 
 	// Keep coverImageUrl in sync when the user selects a different quiz
 	function handleQuizChange() {
@@ -17,17 +21,20 @@
 		coverImageUrl = quiz?.coverImage || "";
 	}
 
-	// Update local state when server data changes (e.g. after successful form submission)
+	// Update local state when server data changes
 	$effect(() => {
-		// We want this to run whenever data OR activeQuizLoading changes
-		if (activeQuizLoading) return;
+		if (activeQuizLoading || homeContentLoading) return;
 
 		const remoteId = data.activeQuizId || "";
 		const remoteCover = data.activeQuiz?.coverImage || "";
+		const remoteTitle = data.homeTitle;
+		const remoteSubtitle = data.homeSubtitle;
 		
 		untrack(() => {
 			selectedQuizId = remoteId;
 			coverImageUrl = remoteCover;
+			homeTitle = remoteTitle;
+			homeSubtitle = remoteSubtitle;
 		});
 	});
 </script>
@@ -37,6 +44,35 @@
 		<a href="/admin" class="back-link">← Επιστροφή στο Dashboard</a>
 		<h1>Διαχείριση Εισαγωγικής Σελίδας</h1>
 	</header>
+
+	<section class="home-content-section">
+		<Card title="Περιεχόμενο Αρχικής Σελίδας">
+			<form 
+				method="POST" 
+				action="?/updateHomeContent" 
+				use:enhance={() => {
+					homeContentLoading = true;
+					return async ({ update }) => {
+						await update();
+						homeContentLoading = false;
+					};
+				}}
+				class="home-content-form"
+			>
+				<div class="field">
+					<label for="home-title">Κεντρικός Τίτλος</label>
+					<input type="text" id="home-title" name="homeTitle" bind:value={homeTitle} disabled={homeContentLoading} />
+				</div>
+				<div class="field">
+					<label for="home-subtitle">Υπότιτλος</label>
+					<input type="text" id="home-subtitle" name="homeSubtitle" bind:value={homeSubtitle} disabled={homeContentLoading} />
+				</div>
+				<Button type="submit" loading={homeContentLoading}>
+					Αποθήκευση Περιεχομένου
+				</Button>
+			</form>
+		</Card>
+	</section>
 	
 	<section class="active-quiz-section">
 		<Card title="Ενεργό Quiz για Παίκτες">
@@ -114,17 +150,13 @@
 		margin-bottom: 0.5rem;
 	}
 
-	.active-quiz-section {
-		margin-bottom: 1rem;
-	}
-
-	.active-quiz-form {
+	.home-content-form, .active-quiz-form {
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
 	}
 
-	.input-group {
+	.field, .input-group {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
@@ -136,19 +168,17 @@
 		color: #4b5563;
 	}
 
-	select {
+	input, select {
 		padding: 0.75rem;
 		border: 1px solid #d1d5db;
 		border-radius: 6px;
 		font-size: 1rem;
 		background-color: white;
 		width: 100%;
-		max-width: 400px;
+		max-width: 100%;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
+	select {
+		max-width: 400px;
 	}
 </style>

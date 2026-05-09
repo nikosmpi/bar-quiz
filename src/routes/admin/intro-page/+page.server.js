@@ -14,8 +14,12 @@ export const load = async ({ request }) => {
 	}
 
 	const quizzes = await db.select().from(quiz).orderBy(desc(quiz.createdAt));
-	const activeQuizConfig = await db.select().from(config).where(eq(config.key, 'active_quiz_id')).get();
-	const activeQuizId = activeQuizConfig?.value || null;
+	
+	// Fetch all relevant configs
+	const configs = await db.select().from(config).all();
+	const configMap = Object.fromEntries(configs.map(c => [c.key, c.value]));
+
+	const activeQuizId = configMap['active_quiz_id'] || null;
 
 	let activeQuiz = null;
 	if (activeQuizId) {
@@ -26,7 +30,9 @@ export const load = async ({ request }) => {
 		user: session.user,
 		quizzes,
 		activeQuizId,
-		activeQuiz
+		activeQuiz,
+		homeTitle: configMap['home_title'] || 'Καλώς ήρθατε στο Quiz App',
+		homeSubtitle: configMap['home_subtitle'] || 'Ετοιμαστείτε για μια μοναδική εμπειρία γνώσεων!'
 	};
 };
 
@@ -54,6 +60,37 @@ export const actions = {
 			await db.update(quiz)
 				.set({ coverImage, updatedAt: new Date() })
 				.where(eq(quiz.id, quizId));
+		}
+
+		return { success: true };
+	},
+
+	updateHomeContent: async ({ request }) => {
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session || session.user.role !== 'admin') {
+			return fail(403);
+		}
+
+		const formData = await request.formData();
+		const homeTitle = formData.get('homeTitle')?.toString().trim();
+		const homeSubtitle = formData.get('homeSubtitle')?.toString().trim();
+
+		if (homeTitle !== undefined) {
+			await db.insert(config)
+				.values({ key: 'home_title', value: homeTitle })
+				.onConflictDoUpdate({
+					target: config.key,
+					set: { value: homeTitle }
+				});
+		}
+
+		if (homeSubtitle !== undefined) {
+			await db.insert(config)
+				.values({ key: 'home_subtitle', value: homeSubtitle })
+				.onConflictDoUpdate({
+					target: config.key,
+					set: { value: homeSubtitle }
+				});
 		}
 
 		return { success: true };
