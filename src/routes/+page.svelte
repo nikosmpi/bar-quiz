@@ -1,4 +1,5 @@
 <script>
+	import Button from '$lib/components/Button.svelte';
 	let { data } = $props();
 </script>
 
@@ -7,6 +8,14 @@
 		<h1>{data.homeTitle}</h1>
 		<p class="subtitle">{data.homeSubtitle}</p>
 	</section>
+
+	{#if data.activeQuizId && !data.user}
+		<div class="cta-section">
+			<Button href="/login" variant="primary" size="large">
+				Συνδεθείτε για να παίξετε!
+			</Button>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -19,11 +28,11 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 2rem;
 	}
 
 	.hero {
 		text-align: center;
-		margin-bottom: 3rem;
 	}
 
 	h1 {
@@ -39,6 +48,10 @@
 		color: #4b5563;
 		max-width: 600px;
 		margin: 0 auto;
+	}
+
+	.cta-section {
+		margin-top: 1rem;
 	}
 
 	@media (max-width: 768px) {

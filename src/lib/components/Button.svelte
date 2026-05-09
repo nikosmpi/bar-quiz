@@ -6,23 +6,36 @@
 		loading = false, 
 		disabled = false, 
 		onclick,
+		href = "",
 		class: className = "",
 		...rest
 	} = $props();
+
+	const commonClass = `btn btn-${variant} ${className}`;
 </script>
 
-<button 
-	{type} 
-	disabled={disabled || loading} 
-	{onclick}
-	class="btn btn-{variant} {className}"
-	{...rest}
->
-	{#if loading}
-		<span class="spinner"></span>
-	{/if}
-	{@render children?.()}
-</button>
+{#if href}
+	<a 
+		{href} 
+		class={commonClass}
+		{...rest}
+	>
+		{@render children?.()}
+	</a>
+{:else}
+	<button 
+		{type} 
+		disabled={disabled || loading} 
+		{onclick}
+		class={commonClass}
+		{...rest}
+	>
+		{#if loading}
+			<span class="spinner"></span>
+		{/if}
+		{@render children?.()}
+	</button>
+{/if}
 
 <style>
 	.btn {
@@ -38,6 +51,7 @@
 		font-family: inherit;
 		gap: 0.5rem;
 		width: auto;
+		text-decoration: none;
 	}
 
 	.btn:disabled {
