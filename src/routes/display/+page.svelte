@@ -13,6 +13,7 @@
 	});
 
 	let qrCodeUrl = $state('');
+	let hasInteracted = $state(false); // Track if user clicked to enable media
 
 	onMount(async () => {
 		if (data.activeQuizId) {
@@ -51,34 +52,62 @@
 
 	function handleVideoControl(action, value) {
 		const video = document.querySelector('video');
-		const iframe = document.querySelector('iframe');
+		const iframe = document.getElementById('yt-player');
+
+		console.log(`Action: ${action}`, { video: !!video, iframe: !!iframe });
 
 		if (video) {
-			switch (action) {
-				case 'play': video.play(); break;
-				case 'pause': video.pause(); break;
-				case 'stop': video.pause(); video.currentTime = 0; break;
-				case 'seek': video.currentTime += value; break;
-				case 'mute': video.muted = true; break;
-				case 'unmute': video.muted = false; video.volume = 1; break;
-			}
+			try {
+				switch (action) {
+					case 'play': video.play().catch(e => console.error('Play failed:', e)); break;
+					case 'pause': video.pause(); break;
+					case 'stop': video.pause(); video.currentTime = 0; break;
+					case 'seek': video.currentTime += value; break;
+					case 'mute': video.muted = true; break;
+					case 'unmute': video.muted = false; video.volume = 1.0; break;
+				}
+			} catch (e) { console.error(e); }
 		}
 
 		if (iframe) {
-			const post = (func, args = '') => iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
-			switch (action) {
-				case 'play': post('playVideo'); break;
-				case 'pause': post('pauseVideo'); break;
-				case 'stop': post('stopVideo'); break;
-				case 'seek': post('seekTo', [value, true]); break;
-				case 'mute': post('mute'); break;
-				case 'unmute': post('unMute'); post('setVolume', [100]); break;
-			}
+			try {
+				const post = (func, args = "") => {
+					iframe.contentWindow.postMessage(JSON.stringify({ 
+						event: 'command', 
+						func: func, 
+						args: args 
+					}), '*');
+				};
+
+				switch (action) {
+					case 'play': post('playVideo'); break;
+					case 'pause': post('pauseVideo'); break;
+					case 'stop': post('stopVideo'); post('seekTo', [0, true]); break;
+					case 'seek': post('seekTo', [value, true]); break; // Value should be absolute for YT, but we use it as fallback
+					case 'mute': post('mute'); break;
+					case 'unmute': post('unMute'); post('setVolume', 100); break;
+				}
+			} catch (e) { console.error(e); }
 		}
+	}
+
+	function enableMedia() {
+		hasInteracted = true;
+		console.log('Media enabled by user interaction');
 	}
 </script>
 
-<div class="display-container">
+<div class="display-container" onclick={enableMedia} onkeydown={enableMedia} role="button" tabindex="0">
+	{#if !hasInteracted}
+		<div class="interaction-overlay">
+			<div class="interaction-prompt">
+				<span class="icon">🖱️</span>
+				<h2>Κάντε κλικ για ενεργοποίηση</h2>
+				<p>Απαραίτητο για την αναπαραγωγή ήχου και video.</p>
+			</div>
+		</div>
+	{/if}
+
 	{#if gameState.type === 'intro'}
 		<div class="intro-view">
 			<div class="intro-content">
@@ -129,7 +158,6 @@
 					</div>
 				</div>
 			{:else}
-				<!-- Fallback to centered text if no media OR card_title_text selected -->
 				<div class="text-centered-view" class:only-title={!card.explanation}>
 					<div class="text-animate-up">
 						<h1>{card.text}</h1>
@@ -181,7 +209,24 @@
 		font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 		display: flex;
 		flex-direction: column;
+		position: relative;
 	}
+
+	.interaction-overlay {
+		position: absolute;
+		top: 0; left: 0; right: 0; bottom: 0;
+		background: rgba(0,0,0,0.9);
+		z-index: 10000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	.interaction-prompt { text-align: center; color: white; }
+	.interaction-prompt .icon { font-size: 5rem; display: block; margin-bottom: 1rem; animation: pulse 2s infinite; }
+	.interaction-prompt h2 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+	.interaction-prompt p { font-size: 1.2rem; opacity: 0.7; }
 
 	h1 { margin: 0; font-weight: 800; }
 
@@ -201,14 +246,7 @@
 	}
 
 	/* Intro View */
-	.intro-view { 
-		flex: 1;
-		display: grid; 
-		grid-template-columns: 1fr 400px; 
-		align-items: center; 
-		padding: 4rem; 
-		gap: 4rem; 
-	}
+	.intro-view { flex: 1; display: grid; grid-template-columns: 1fr 400px; align-items: center; padding: 4rem; gap: 4rem; }
 	.intro-content h1 { font-size: 5rem; line-height: 1.1; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 	.subtitle { font-size: 2.5rem; color: #9ca3af; margin: 0; }
 	.active-quiz-badge { display: inline-block; background: #2563eb; color: white; padding: 0.75rem 1.5rem; border-radius: 9999px; font-size: 1.5rem; font-weight: 600; margin-top: 2rem; }

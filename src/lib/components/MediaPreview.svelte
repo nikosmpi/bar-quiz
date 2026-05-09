@@ -3,13 +3,18 @@
 
 	function getYoutubeId(url) {
 		if (!url) return null;
-		// A more reliable and cleaner regex for YouTube IDs
 		const regExp = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/|live\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*/;
 		const match = url.match(regExp);
 		return (match && match[1].length === 11) ? match[1] : null;
 	}
 
 	let youtubeId = $derived(getYoutubeId(url));
+	
+	// Get current origin for YouTube API security
+	let origin = "";
+	if (typeof window !== 'undefined') {
+		origin = window.location.origin;
+	}
 </script>
 
 <div class="media-preview {className}">
@@ -18,9 +23,10 @@
 	{:else if type === 'video' && youtubeId}
 		<div class="youtube-container">
 			<iframe 
+				id="yt-player"
 				width="100%" 
 				height="100%" 
-				src="https://www.youtube.com/embed/{youtubeId}?controls=0&enablejsapi=1" 
+				src="https://www.youtube.com/embed/{youtubeId}?controls=0&enablejsapi=1&origin={encodeURIComponent(origin)}&widget_referrer={encodeURIComponent(origin)}" 
 				title="YouTube video player" 
 				frameborder="0" 
 				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
