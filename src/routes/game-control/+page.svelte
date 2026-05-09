@@ -74,7 +74,7 @@
 			<header class="panel-header">
 				<div class="header-info">
 					<h1>Έλεγχος Παιχνιδιού</h1>
-					<p>Ενεργό Quiz: <strong>{data.activeQuizId}</strong></p>
+					<p>Ενεργό Quiz: <strong>{data.activeQuiz?.name || data.activeQuizId}</strong></p>
 				</div>
 				<div class="header-actions">
 					<Button onclick={() => handleCommand('SHOW_LEADERBOARD')} variant="secondary">Κατάταξη</Button>

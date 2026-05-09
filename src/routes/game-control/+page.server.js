@@ -17,7 +17,9 @@ export const load = async ({ request }) => {
 	const activeQuizId = activeQuizConfig?.value || null;
 
 	let questions = [];
+	let activeQuiz = null;
 	if (activeQuizId) {
+		activeQuiz = await db.select().from(quiz).where(eq(quiz.id, activeQuizId)).get();
 		questions = await db.select().from(question)
 			.where(eq(question.quizId, activeQuizId))
 			.orderBy(asc(question.order));
@@ -26,6 +28,7 @@ export const load = async ({ request }) => {
 	return {
 		user: session.user,
 		activeQuizId,
+		activeQuiz,
 		questions
 	};
 };
