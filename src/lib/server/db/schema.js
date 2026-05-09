@@ -74,6 +74,8 @@ export const question = sqliteTable('question', {
 	quizId: text('quiz_id')
 		.notNull()
 		.references(() => quiz.id, { onDelete: 'cascade' }),
+	type: text('type').notNull().default('question'), // 'question', 'card'
+	template: text('template').notNull().default('standard'), // Layout template
 	text: text('text').notNull(),
 	explanation: text('explanation'),
 	mediaType: text('media_type').notNull().default('none'), // 'none', 'image', 'video'

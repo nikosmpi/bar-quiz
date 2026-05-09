@@ -37,6 +37,7 @@ export const actions = {
 		const formData = await request.formData();
 		const text = formData.get('text')?.toString().trim();
 		const explanation = formData.get('explanation')?.toString().trim() || null;
+		const template = formData.get('template')?.toString() || 'standard';
 		const points = parseInt(formData.get('points')?.toString() || '1');
 		const timeLimit = parseInt(formData.get('timeLimit')?.toString() || '30');
 		const mediaType = formData.get('mediaType')?.toString() || 'none';
@@ -47,6 +48,7 @@ export const actions = {
 		await db.update(question).set({
 			text,
 			explanation,
+			template,
 			points,
 			timeLimit,
 			mediaType,

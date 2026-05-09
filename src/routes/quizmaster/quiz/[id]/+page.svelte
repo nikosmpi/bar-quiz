@@ -42,45 +42,73 @@
 	</header>
 
 	<div class="editor-layout">
-		<!-- Left Side: Add Question -->
+		<!-- Left Side: Controls -->
 		<aside class="side-panel">
-			<section class="add-question-section">
-				<h3>Προσθήκη Ερώτησης</h3>
-				<form 
-					method="POST" 
-					action="?/addQuestion" 
-					use:enhance={() => {
-						loading = true;
-						return async ({ update }) => {
-							await update();
-							loading = false;
-						};
-					}}
-					class="add-form"
-				>
-					<div class="field">
-						<input type="text" name="text" placeholder="Γράψτε την ερώτηση εδώ..." required />
-					</div>
-					<Button type="submit" {loading} variant="primary" class="btn-full" style="background: #059669;">
-						Προσθήκη Ερώτησης
-					</Button>
-				</form>
-			</section>
+			<Card class="control-card">
+				<section class="add-section">
+					<h3>Προσθήκη Ερώτησης</h3>
+					<form 
+						method="POST" 
+						action="?/addQuestion" 
+						use:enhance={() => {
+							loading = true;
+							return async ({ update }) => {
+								await update();
+								loading = false;
+							};
+						}}
+						class="add-form"
+					>
+						<div class="field">
+							<input type="text" name="text" placeholder="Κείμενο ερώτησης..." required />
+						</div>
+						<Button type="submit" {loading} variant="primary" class="btn-full" style="background: #059669;">
+							+ Ερώτηση
+						</Button>
+					</form>
+				</section>
+
+				<hr class="separator" />
+
+				<section class="add-section">
+					<h3>Προσθήκη Κάρτας</h3>
+					<p class="help-text">Πληροφοριακή κάρτα με τίτλο, κείμενο και media.</p>
+					<form 
+						method="POST" 
+						action="?/addCard" 
+						use:enhance={() => {
+							loading = true;
+							return async ({ update }) => {
+								await update();
+								loading = false;
+							};
+						}}
+						class="add-form"
+					>
+						<div class="field">
+							<input type="text" name="text" placeholder="Τίτλος κάρτας..." required />
+						</div>
+						<Button type="submit" {loading} variant="primary" class="btn-full" style="background: #2563eb;">
+							+ Κάρτα
+						</Button>
+					</form>
+				</section>
+			</Card>
 		</aside>
 
-		<!-- Right Side: Questions Management -->
+		<!-- Right Side: Content List -->
 		<main class="questions-main">
 			<section class="questions-list">
 				<div class="list-header">
-					<h2>Ερωτήσεις ({data.questions.length})</h2>
+					<h2>Περιεχόμενο Quiz ({data.questions.length})</h2>
 				</div>
 
 				{#if data.questions.length === 0}
-					<p class="empty">Δεν υπάρχουν ακόμα ερωτήσεις. Ξεκινήστε προσθέτοντας μία από τα αριστερά!</p>
+					<p class="empty">Δεν υπάρχει ακόμα περιεχόμενο. Ξεκινήστε από τα αριστερά!</p>
 				{:else}
 					<div class="questions-grid">
 						{#each data.questions as q, i (q.id)}
-							<Card class="question-row-card">
+							<Card class="question-row-card {q.type === 'card' ? 'is-card' : ''}">
 								<div class="reorder-actions">
 									<form method="POST" action="?/reorderQuestion" use:enhance>
 										<input type="hidden" name="questionId" value={q.id} />
@@ -94,18 +122,27 @@
 									</form>
 								</div>
 								<div class="q-info">
-									<span class="q-text">{q.text}</span>
-									<div class="q-meta">
-										<Badge variant="primary">{q.points} pts</Badge>
-										<Badge variant="default">{q.timeLimit}s</Badge>
-										<Badge variant="default">{q.options.length} επιλογές</Badge>
+									<div class="type-badge-row">
+										{#if q.type === 'card'}
+											<Badge variant="default" style="background: #dbeafe; color: #1e40af; border: none;">ΚΑΡΤΑ</Badge>
+										{:else}
+											<Badge variant="default" style="background: #d1fae5; color: #065f46; border: none;">ΕΡΩΤΗΣΗ</Badge>
+										{/if}
 									</div>
+									<span class="q-text">{q.text}</span>
+									{#if q.type === 'question'}
+										<div class="q-meta">
+											<Badge variant="primary">{q.points} pts</Badge>
+											<Badge variant="default">{q.timeLimit}s</Badge>
+											<Badge variant="default">{q.options.length} επιλογές</Badge>
+										</div>
+									{/if}
 								</div>
 								<div class="q-actions">
 									<a href="/quizmaster/quiz/{data.quiz.id}/question/{q.id}" class="edit-link-btn">Επεξεργασία</a>
 									<form method="POST" action="?/deleteQuestion" use:enhance>
 										<input type="hidden" name="questionId" value={q.id} />
-										<button type="submit" class="delete-icon-btn" onclick={(e) => { if(!confirm('Διαγραφή ερώτησης;')) e.preventDefault(); }} title="Διαγραφή">
+										<button type="submit" class="delete-icon-btn" onclick={(e) => { if(!confirm('Διαγραφή;')) e.preventDefault(); }} title="Διαγραφή">
 											✕
 										</button>
 									</form>
@@ -190,25 +227,38 @@
 		top: 5rem;
 	}
 
-	.add-question-section {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 1px solid #e5e7eb;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	:global(.control-card) {
+		padding: 0 !important;
 	}
 
-	.add-question-section h3 {
+	.add-section {
+		padding: 1.5rem;
+	}
+
+	.add-section h3 {
 		margin-top: 0;
-		margin-bottom: 1rem;
+		margin-bottom: 0.5rem;
 		font-size: 1.1rem;
 		color: #111827;
+	}
+
+	.help-text {
+		font-size: 0.8rem;
+		color: #6b7280;
+		margin-bottom: 1rem;
+		line-height: 1.3;
+	}
+
+	.separator {
+		border: 0;
+		border-top: 1px solid #f3f4f6;
+		margin: 0;
 	}
 
 	.add-form {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
 	}
 
 	.add-form .field input {
@@ -241,6 +291,14 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
+	}
+
+	:global(.question-row-card.is-card) {
+		border-left: 4px solid #2563eb !important;
+	}
+
+	.type-badge-row {
+		margin-bottom: 0.4rem;
 	}
 
 	.reorder-actions {

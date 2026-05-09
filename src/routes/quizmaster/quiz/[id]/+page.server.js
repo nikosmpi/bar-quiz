@@ -79,12 +79,14 @@ export const actions = {
 		const id = Math.random().toString(36).substring(2, 12);
 		
 		// Get current max order
-		const lastQuestion = await db.select().from(question).where(eq(question.quizId, params.id)).orderBy(asc(question.order)).get();
-		const nextOrder = lastQuestion ? lastQuestion.order + 1 : 0;
+		const lastContent = await db.select().from(question).where(eq(question.quizId, params.id)).orderBy(asc(question.order)).get();
+		const nextOrder = lastContent ? lastContent.order + 1 : 0;
 
 		await db.insert(question).values({
 			id,
 			quizId: params.id,
+			type: 'question',
+			template: 'question_standard',
 			text,
 			order: nextOrder,
 			createdAt: new Date(),
@@ -101,6 +103,34 @@ export const actions = {
 				order: i
 			});
 		}
+
+		return { success: true };
+	},
+
+	addCard: async ({ params, request }) => {
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session) return fail(401);
+
+		const formData = await request.formData();
+		const text = formData.get('text')?.toString().trim();
+		if (!text) return fail(400, { message: 'Ο τίτλος της κάρτας είναι υποχρεωτικός.' });
+
+		const id = Math.random().toString(36).substring(2, 12);
+		
+		// Get current max order
+		const lastContent = await db.select().from(question).where(eq(question.quizId, params.id)).orderBy(asc(question.order)).get();
+		const nextOrder = lastContent ? lastContent.order + 1 : 0;
+
+		await db.insert(question).values({
+			id,
+			quizId: params.id,
+			type: 'card',
+			template: 'card_title_text',
+			text,
+			order: nextOrder,
+			createdAt: new Date(),
+			updatedAt: new Date()
+		});
 
 		return { success: true };
 	},
