@@ -7,7 +7,6 @@
 	let { data, form } = $props();
 
 	let loading = $state(false);
-	let activeQuizLoading = $state(false);
 </script>
 
 <div class="quizmaster-container">
@@ -15,36 +14,6 @@
 		<h1>Quizmaster Dashboard</h1>
 		<p class="welcome">Καλώς ήρθες, <strong>{data.user.name}</strong>!</p>
 	</header>
-
-	<section class="active-quiz-section">
-		<Card title="Ενεργό Quiz για Παίκτες">
-			<form 
-				method="POST" 
-				action="?/setActiveQuiz" 
-				use:enhance={() => {
-					activeQuizLoading = true;
-					return async ({ update }) => {
-						await update();
-						activeQuizLoading = false;
-					};
-				}}
-				class="active-quiz-form"
-			>
-				<div class="input-group">
-					<label for="active-quiz">Επιλέξτε το Quiz που είναι "στον αέρα":</label>
-					<select name="quizId" id="active-quiz" value={data.activeQuizId || ""} disabled={activeQuizLoading}>
-						<option value="">-- Κανένα (Απενεργοποίηση) --</option>
-						{#each data.quizzes as q}
-							<option value={q.id}>{q.name}</option>
-						{/each}
-					</select>
-				</div>
-				<Button type="submit" loading={activeQuizLoading} variant="primary">
-					Ενημέρωση Ενεργού Quiz
-				</Button>
-			</form>
-		</Card>
-	</section>
 
 	<Card title="Δημιουργία Νέου Quiz" class="create-quiz-card">
 		<form 
@@ -127,23 +96,6 @@
 
 	.welcome {
 		color: #6b7280;
-	}
-
-	.active-quiz-form {
-		display: flex;
-		gap: 1rem;
-		align-items: flex-end;
-		flex-wrap: wrap;
-	}
-
-	select {
-		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		font-size: 1rem;
-		background-color: white;
-		width: 100%;
-		max-width: 400px;
 	}
 
 	.active-badge {

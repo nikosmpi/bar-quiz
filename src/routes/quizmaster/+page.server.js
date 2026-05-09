@@ -61,25 +61,5 @@ export const actions = {
 			console.error('Failed to create quiz:', error);
 			return fail(500, { message: 'Σφάλμα κατά τη δημιουργία του quiz.' });
 		}
-	},
-
-	setActiveQuiz: async ({ request }) => {
-		const session = await auth.api.getSession({ headers: request.headers });
-		if (!session || (session.user.role !== 'admin' && session.user.role !== 'quizmaster')) {
-			return fail(403);
-		}
-
-		const formData = await request.formData();
-		const quizId = formData.get('quizId')?.toString() || "";
-
-		// Use insert with onConflictUpdate (upsert) for the config table
-		await db.insert(config)
-			.values({ key: 'active_quiz_id', value: quizId })
-			.onConflictDoUpdate({
-				target: config.key,
-				set: { value: quizId }
-			});
-
-		return { success: true };
 	}
 };
