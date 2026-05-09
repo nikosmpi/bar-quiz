@@ -109,12 +109,14 @@
 
 	{:else if gameState.type === 'card'}
 		{@const card = gameState.content}
+		{@const hasMedia = card.mediaType !== 'none' && card.mediaUrl}
+		
 		<div class="card-view template-{card.template}">
-			{#if card.template === 'card_full_media'}
+			{#if card.template === 'card_full_media' && hasMedia}
 				<div class="full-media-wrap">
 					<MediaPreview url={card.mediaUrl} type={card.mediaType} class="full-screen-preview" />
 				</div>
-			{:else if card.template === 'card_split_media'}
+			{:else if card.template === 'card_split_media' && hasMedia}
 				<div class="split-view">
 					<div class="media-side">
 						<MediaPreview url={card.mediaUrl} type={card.mediaType} />
@@ -127,6 +129,7 @@
 					</div>
 				</div>
 			{:else}
+				<!-- Fallback to centered text if no media OR card_title_text selected -->
 				<div class="text-centered-view" class:only-title={!card.explanation}>
 					<div class="text-animate-up">
 						<h1>{card.text}</h1>
