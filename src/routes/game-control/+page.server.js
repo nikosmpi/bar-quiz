@@ -1,6 +1,6 @@
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { quiz, config, question } from '$lib/server/db/schema';
+import { quiz, config, question, option } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import { eq, asc } from 'drizzle-orm';
 
@@ -20,9 +20,17 @@ export const load = async ({ request }) => {
 	let activeQuiz = null;
 	if (activeQuizId) {
 		activeQuiz = await db.select().from(quiz).where(eq(quiz.id, activeQuizId)).get();
-		questions = await db.select().from(question)
+		const rawQuestions = await db.select().from(question)
 			.where(eq(question.quizId, activeQuizId))
 			.orderBy(asc(question.order));
+
+		// Map questions with their options for full production control
+		questions = await Promise.all(rawQuestions.map(async (q) => {
+			const opts = await db.select().from(option)
+				.where(eq(option.questionId, q.id))
+				.orderBy(asc(option.order));
+			return { ...q, options: opts };
+		}));
 	}
 
 	return {

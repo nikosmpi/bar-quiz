@@ -59,10 +59,12 @@
 				if (update.command === 'SHOW_INTRO') {
 					gameState = { type: 'intro', content: null, questionNumber: 0 };
 				} else if (update.command === 'PREPARE_QUESTION') {
-					const q = data.questions[update.payload.index];
+					// Use item from payload if available, else fallback to local data
+					const q = update.payload.item || data.questions[update.payload.index];
 					gameState = { type: 'prep', content: q, questionNumber: update.payload.number };
 				} else if (update.command === 'SHOW_CONTENT') {
-					const item = data.questions[update.payload.index];
+					// Use item from payload if available, else fallback to local data
+					const item = update.payload.item || data.questions[update.payload.index];
 					if (item.type === 'question') {
 						startCountdown(item);
 					} else {
@@ -140,12 +142,8 @@
 					<span class="timer-badge" class:low={questionTimer <= 5}>{questionTimer}s</span>
 				</div>
 
-				<div class="question-text-box">
-					<h3>{gameState.content.text}</h3>
-				</div>
-				
 				<div class="options-grid">
-					{#each gameState.content.options as opt, i}
+					{#each gameState.content.options || [] as opt, i}
 						<button 
 							class="option-btn color-{i}" 
 							class:selected={selectedOptionId === opt.id}
@@ -158,6 +156,8 @@
 								<span class="check-icon">✓</span>
 							{/if}
 						</button>
+					{:else}
+						<p class="no-options">Δεν βρέθηκαν επιλογές για αυτή την ερώτηση.</p>
 					{/each}
 				</div>
 
@@ -236,7 +236,7 @@
 	/* Countdown */
 	.countdown-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 	.countdown-circle {
-		width: 120px; height: 150px;
+		width: 120px; height: 120px;
 		background: #2563eb;
 		border-radius: 50%;
 		display: flex; align-items: center; justify-content: center;
@@ -297,6 +297,8 @@
 	.color-1 .letter { background: #3b82f6; }
 	.color-2 .letter { background: #10b981; }
 	.color-3 .letter { background: #f59e0b; }
+
+	.no-options { text-align: center; color: #94a3b8; font-style: italic; padding: 2rem; }
 
 	.answer-feedback {
 		margin-top: 1.5rem;

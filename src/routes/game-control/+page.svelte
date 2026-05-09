@@ -42,7 +42,8 @@
 		isPreparing = true;
 		handleCommand('PREPARE_QUESTION', { 
 			index: selectedIndex,
-			number: getQuestionNumber(selectedIndex)
+			number: getQuestionNumber(selectedIndex),
+			item: selectedItem // Send full item just in case
 		});
 	}
 
@@ -55,7 +56,8 @@
 			handleCommand('SHOW_CONTENT', { 
 				id: selectedItem.id, 
 				type: selectedItem.type,
-				index: selectedIndex 
+				index: selectedIndex,
+				item: selectedItem // Send the full object including options
 			});
 		}
 	}
@@ -177,7 +179,7 @@
 										<span><strong>Time:</strong> {selectedItem.timeLimit}s</span>
 									</div>
 									<div class="options-preview-grid">
-										{#each selectedItem.options as opt}
+										{#each selectedItem.options || [] as opt}
 											<div class="opt-item" class:is-correct={opt.isCorrect}>
 												<span class="bullet"></span>
 												{opt.text}
