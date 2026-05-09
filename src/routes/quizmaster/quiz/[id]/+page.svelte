@@ -3,79 +3,46 @@
 	import Button from '$lib/components/Button.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import Card from '$lib/components/Card.svelte';
-	import MediaField from '$lib/components/MediaField.svelte';
 	
-	let { data, form } = $props();
+	let { data } = $props();
 
 	let loading = $state(false);
-	
 	let quizName = $state("");
-	let quizIntro = $state("");
-	let quizMediaType = $state("image");
-	let featuredImageUrl = $state("");
 
 	$effect(() => {
 		quizName = data.quiz.name;
-		quizIntro = data.quiz.introText || '';
-		quizMediaType = data.quiz.mediaType || 'image';
-		featuredImageUrl = data.quiz.featuredImage || '';
 	});
 </script>
 
 <div class="edit-quiz-container">
 	<header class="main-header">
-		<a href="/quizmaster" class="back-link">← Επιστροφή στο Dashboard</a>
-		<h1>Επεξεργασία Quiz</h1>
+		<div class="header-top">
+			<a href="/quizmaster" class="back-link">← Dashboard</a>
+			<form method="POST" action="?/deleteQuiz" use:enhance={( { cancel } ) => {
+				if(!confirm('Διαγραφή ολόκληρου του Quiz; Αυτή η ενέργεια δεν αναιρείται.')) return cancel();
+				return async ({ update }) => { await update(); };
+			}}>
+				<Button type="submit" variant="danger" size="small" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Διαγραφή Quiz</Button>
+			</form>
+		</div>
+		
+		<div class="header-main">
+			<h1>Επεξεργασία</h1>
+			<form method="POST" action="?/updateQuizInfo" use:enhance={() => {
+				loading = true;
+				return async ({ update }) => {
+					await update();
+					loading = false;
+				};
+			}} class="quiz-name-form">
+				<input type="text" name="name" bind:value={quizName} required placeholder="Όνομα Quiz" />
+				<Button type="submit" {loading} variant="primary" style="padding: 0.5rem 1rem;">Αποθήκευση</Button>
+			</form>
+		</div>
 	</header>
 
 	<div class="editor-layout">
-		<!-- Left Side: Quiz Settings -->
-		<aside class="settings-sidebar">
-			<Card title="Πληροφορίες Quiz" class="settings-card">
-				<form method="POST" action="?/updateQuizInfo" use:enhance class="quiz-info-form">
-					<div class="field">
-						<label for="quiz-name">Όνομα Quiz</label>
-						<input type="text" id="quiz-name" name="name" bind:value={quizName} required />
-					</div>
-
-					<div class="field">
-						<label for="quiz-media">Εισαγωγικό Πολυμέσα (Προαιρετικό)</label>
-						<MediaField 
-							bind:mediaType={quizMediaType} 
-							bind:mediaUrl={featuredImageUrl} 
-							originalUrl={data.quiz.featuredImage}
-							allowYouTube={true}
-							allowVideoFile={true}
-						/>
-						<input type="hidden" name="mediaType" value={quizMediaType} />
-						<input type="hidden" name="featuredImage" value={featuredImageUrl} />
-					</div>
-
-					<div class="field">
-						<label for="quiz-intro">Εισαγωγικό Κείμενο</label>
-						<textarea id="quiz-intro" name="introText" rows="5" bind:value={quizIntro}></textarea>
-					</div>
-
-					<Button type="submit" loading={loading} class="btn-full">
-						Αποθήκευση Πληροφοριών
-					</Button>
-				</form>
-				
-				<hr class="separator" />
-				
-				<div class="danger-zone">
-					<h3>Επικίνδυνη Ζώνη</h3>
-					<form method="POST" action="?/deleteQuiz" use:enhance={( { cancel } ) => {
-						if(!confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε ολόκληρο το Quiz; Αυτή η ενέργεια δεν αναιρείται.')) return cancel();
-						return async ({ update }) => { await update(); };
-					}}>
-						<Button type="submit" variant="danger" class="btn-full">Διαγραφή Quiz</Button>
-					</form>
-				</div>
-			</Card>
-		</aside>
-
-		<!-- Right Side: Questions Management -->
+		<!-- Main Content: Questions Management -->
 		<main class="questions-main">
 			<section class="add-question-section">
 				<h3>Προσθήκη Ερώτησης</h3>
@@ -144,7 +111,7 @@
 
 <style>
 	.edit-quiz-container {
-		max-width: 1200px;
+		max-width: 1000px;
 		margin: 0 auto;
 		padding: 1rem;
 	}
@@ -152,74 +119,57 @@
 	.main-header {
 		margin-bottom: 2rem;
 		border-bottom: 1px solid #e5e7eb;
-		padding-bottom: 1rem;
+		padding-bottom: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
-	.main-header h1 {
-		margin: 0.5rem 0 0;
+	.header-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.header-main {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	.header-main h1 {
+		margin: 0;
 		font-size: 1.8rem;
 		color: #111827;
+		white-space: nowrap;
+	}
+
+	.quiz-name-form {
+		display: flex;
+		gap: 0.75rem;
+		flex: 1;
+		min-width: 300px;
+	}
+
+	.quiz-name-form input {
+		flex: 1;
+		padding: 0.6rem 1rem;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		font-size: 1.1rem;
+		font-weight: 600;
 	}
 
 	.back-link {
 		color: #2563eb;
 		text-decoration: none;
 		font-size: 0.9rem;
+		font-weight: 500;
 	}
 
 	.editor-layout {
-		display: grid;
-		grid-template-columns: 350px 1fr;
-		gap: 2rem;
-		align-items: start;
-	}
-
-	@media (max-width: 900px) {
-		.editor-layout {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	.settings-sidebar {
-		position: sticky;
-		top: 5rem;
-	}
-
-	.quiz-info-form {
-		display: flex;
-		flex-direction: column;
-		gap: 1.2rem;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-
-	.field label {
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: #4b5563;
-	}
-
-	.field input, .field textarea {
-		padding: 0.6rem;
-		border: 1px solid #d1d5db;
-		border-radius: 4px;
-		font-family: inherit;
-	}
-
-	.separator {
-		border: 0;
-		border-top: 1px solid #f3f4f6;
-		margin: 1.5rem 0;
-	}
-
-	.danger-zone h3 {
-		color: #991b1b;
-		font-size: 0.9rem;
-		margin: 0 0 0.75rem 0;
+		display: block;
 	}
 
 	.add-question-section {
@@ -323,5 +273,16 @@
 
 	.delete-icon-btn:hover {
 		color: #ef4444;
+	}
+
+	@media (max-width: 600px) {
+		.header-main {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+		}
+		.quiz-name-form {
+			width: 100%;
+		}
 	}
 </style>
