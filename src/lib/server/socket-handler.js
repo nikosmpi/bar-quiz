@@ -13,7 +13,7 @@ export const webSocketServer = {
 		const io = new Server(server.httpServer);
 
 		// Map to store user data per room
-		// roomId -> Map(socketId -> { userData, answerCount })
+		// roomId -> Map(socketId -> { userData, answerCount, answeredCurrent })
 		const roomUsers = new Map();
 
 		function broadcastRoomUsers(roomId) {
@@ -41,7 +41,6 @@ export const webSocketServer = {
 				.get();
 				
 				const finalCount = parseInt(result?.count || 0);
-				console.log(`[DB] Count for User:${userId} Quiz:${quizId} => ${finalCount}`);
 				return finalCount;
 			} catch (err) {
 				console.error('[DB Error] Fetching answer count:', err);
@@ -70,13 +69,12 @@ export const webSocketServer = {
 
 					roomUsers.get(roomId).set(socket.id, {
 						...userData,
-						answerCount: dbCount
+						answerCount: dbCount,
+						answeredCurrent: false // Initial state
 					});
 					
-					console.log(`[Join] Player: ${userData.username || userData.name} joined ${roomId} with ${dbCount} answers`);
 					broadcastRoomUsers(roomId);
 				} else {
-					console.log(`[Join] Manager/Display joined room: ${roomId}`);
 					broadcastRoomUsers(roomId);
 				}
 			});
@@ -89,6 +87,7 @@ export const webSocketServer = {
 						const userRecord = usersMap.get(socket.id);
 						const freshCount = await getDbAnswerCount(userRecord.id, roomId);
 						userRecord.answerCount = freshCount;
+						userRecord.answeredCurrent = true; // Mark as answered for current question
 						broadcastRoomUsers(roomId);
 					}
 				}
@@ -97,12 +96,21 @@ export const webSocketServer = {
 			socket.on('game-command', (data) => {
 				const { roomId, command, payload } = data;
 				
+				// Reset current answer status for ALL users when preparing a new question
+				if (command === 'PREPARE_QUESTION' && roomUsers.has(roomId)) {
+					const usersMap = roomUsers.get(roomId);
+					for (let user of usersMap.values()) {
+						user.answeredCurrent = false;
+					}
+					broadcastRoomUsers(roomId);
+				}
+
 				if (command === 'RESET_GAME' && roomUsers.has(roomId)) {
 					const usersMap = roomUsers.get(roomId);
 					for (let user of usersMap.values()) {
 						user.answerCount = 0;
+						user.answeredCurrent = false;
 					}
-					console.log(`[Game] Resetting counts for room ${roomId}`);
 					broadcastRoomUsers(roomId);
 				}
 
@@ -113,7 +121,6 @@ export const webSocketServer = {
 				if (currentRoom && roomUsers.has(currentRoom)) {
 					const usersMap = roomUsers.get(currentRoom);
 					if (usersMap.has(socket.id)) {
-						console.log(`[Leave] User from room ${currentRoom} disconnected`);
 						usersMap.delete(socket.id);
 						broadcastRoomUsers(currentRoom);
 					}
