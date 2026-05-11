@@ -21,12 +21,14 @@
 	let countdown = $state(5);
 	let questionTimer = $state(0);
 	let hasInteracted = $state(false);
+	let showCorrect = $state(false);
 
 	let timerInterval;
 
 	function startQuestionTimer() {
 		if (timerInterval) clearInterval(timerInterval);
 		questionTimer = gameState.content?.timeLimit || 30;
+		showCorrect = false;
 		
 		timerInterval = setInterval(() => {
 			if (questionTimer > 0) {
@@ -42,6 +44,7 @@
 		gameState.type = 'countdown';
 		gameState.content = targetItem;
 		countdown = 5;
+		showCorrect = false;
 		
 		if (timerInterval) clearInterval(timerInterval);
 		
@@ -68,13 +71,24 @@
 					gameState = { type: 'prep', content: q, questionNumber: update.payload.number };
 				} else if (update.command === 'SHOW_CONTENT') {
 					const item = data.questions[update.payload.index];
+					const isReview = update.payload.isReview || false;
+					showCorrect = false;
+
 					if (item.type === 'question') {
-						startCountdown(item);
+						if (isReview) {
+							if (timerInterval) clearInterval(timerInterval);
+							questionTimer = 0;
+							gameState = { type: 'question', content: item, questionNumber: update.payload.number || 0 };
+						} else {
+							startCountdown(item);
+						}
 					} else {
 						gameState = { type: item.type, content: item, questionNumber: 0 };
 					}
 				} else if (update.command === 'SHOW_LEADERBOARD') {
 					gameState = { type: 'leaderboard', content: null, questionNumber: 0 };
+				} else if (update.command === 'SHOW_CORRECT_ANSWER') {
+					showCorrect = true;
 				} else if (update.command === 'VIDEO_CONTROL') {
 					handleVideoControl(update.payload.action, update.payload.value);
 				}
@@ -141,7 +155,7 @@
 	{:else if gameState.type === 'card'}
 		<CardView mode="display" content={gameState.content} />
 	{:else if gameState.type === 'question'}
-		<QuestionView mode="display" content={gameState.content} {questionTimer} />
+		<QuestionView mode="display" content={gameState.content} {questionTimer} {showCorrect} />
 	{:else if gameState.type === 'timesup'}
 		<TimesUpView mode="display" />
 	{:else if gameState.type === 'leaderboard'}
@@ -181,4 +195,3 @@
 
 	@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
 </style>
-

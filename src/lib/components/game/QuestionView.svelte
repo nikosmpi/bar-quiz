@@ -8,6 +8,7 @@
 		content = null,
 		questionTimer = 0,
 		selectedOptionId = null,
+		showCorrect = false,
 		isAlreadyAnswered = false,
 		onSelect = () => {}
 	} = $props();
@@ -30,7 +31,7 @@
 			{/if}
 		</div>
 
-		<OptionGrid options={content?.options || []} mode="display" />
+		<OptionGrid options={content?.options || []} mode="display" {showCorrect} />
 	</div>
 {:else}
 	<div class="question-view-controller">
@@ -43,6 +44,7 @@
 			options={content?.options || []} 
 			mode="controller" 
 			selectedId={selectedOptionId}
+			{showCorrect}
 			disabled={isAlreadyAnswered}
 			onSelect={onSelect}
 		/>

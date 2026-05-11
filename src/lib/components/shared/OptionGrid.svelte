@@ -3,6 +3,7 @@
 		options = [], 
 		mode = 'display', // 'display' or 'controller'
 		selectedId = null,
+		showCorrect = false,
 		disabled = false,
 		onSelect = () => {},
 		class: className = ""
@@ -19,6 +20,7 @@
 			<button 
 				class="option-btn color-{i}" 
 				class:selected={selectedId === opt.id}
+				class:is-correct-reveal={showCorrect && opt.isCorrect}
 				disabled={disabled || (selectedId !== null && selectedId !== opt.id)}
 				onclick={() => onSelect(opt.id)}
 			>
@@ -29,7 +31,7 @@
 				{/if}
 			</button>
 		{:else}
-			<div class="option-card">
+			<div class="option-card" class:is-correct-reveal={showCorrect && opt.isCorrect}>
 				<span class="option-letter">{getLetter(i)}</span>
 				<span class="option-text">{opt.text}</span>
 			</div>
@@ -66,8 +68,20 @@
 		transition: all 0.2s;
 	}
 
+	.is-correct-reveal {
+		border-color: #10b981 !important;
+		background: #064e3b !important;
+		box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+		transform: scale(1.02);
+	}
+
+	.mode-controller .is-correct-reveal {
+		background: #ecfdf5 !important;
+		color: #065f46 !important;
+	}
+
 	.option-letter {
-		width: 50px;
+...
 		height: 50px;
 		background: #2563eb;
 		border-radius: 10px;

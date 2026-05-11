@@ -9,6 +9,7 @@
 	import ProductionConsole from '$lib/components/game-control/ProductionConsole.svelte';
 	import ItemPreview from '$lib/components/game-control/ItemPreview.svelte';
 	import VideoControls from '$lib/components/game-control/VideoControls.svelte';
+	import ReviewPanel from '$lib/components/game-control/ReviewPanel.svelte';
 
 	let { data } = $props();
 
@@ -16,6 +17,8 @@
 	let selectedIndex = $state(-1); // -1 for Intro, 0+ for questions/cards
 	let liveIndex = $state(-2); // Tracks what is currently live on Display
 	let isPreparing = $state(false); // Tracks if we are in preparation mode for a question
+	let isReviewMode = $state(false);
+	let reviewSelectionId = $state(null);
 	
 	let connectedUsers = $state([]); // Real-time users list
 	let dashboardTimer = $state(0); // Synced timer for auto-completion
@@ -79,6 +82,7 @@
 				selectedIndex = -1;
 				liveIndex = -2;
 				isPreparing = false;
+				isReviewMode = false;
 				if (timerInterval) clearInterval(timerInterval);
 				dashboardTimer = 0;
 				
@@ -170,6 +174,17 @@
 		return questionsBefore.length;
 	}
 
+	function handleReviewSelect(question) {
+		reviewSelectionId = question.id;
+		handleCommand('SHOW_CONTENT', { 
+			id: question.id, 
+			type: 'question',
+			index: questions.findIndex(q => q.id === question.id),
+			item: question,
+			isReview: true
+		});
+	}
+
 	// Reset preparation state when selection changes
 	$effect(() => {
 		if (selectedIndex !== liveIndex) {
@@ -184,7 +199,9 @@
 			{questions} 
 			{selectedIndex} 
 			{liveIndex} 
-			onSelect={(i) => selectedIndex = i} 
+			{isReviewMode}
+			onSelect={(i) => { selectedIndex = i; isReviewMode = false; }} 
+			onToggleReviewMode={() => isReviewMode = !isReviewMode}
 		/>
 
 		<ProductionConsole 
@@ -193,28 +210,37 @@
 			onShowLeaderboard={() => handleCommand('SHOW_LEADERBOARD')} 
 			onResetGame={resetGame}
 		>
-			<ItemPreview 
-				{selectedItem} 
-				{liveIndex} 
-				{selectedIndex} 
-				{dashboardTimer} 
-				{isPreparing} 
-				questionNumber={getQuestionNumber(selectedIndex)}
-				onPrepare={prepareQuestion}
-				onGoLive={goLive}
-				onMarkCompleted={markCompleted}
-			/>
+			{#if isReviewMode}
+				<ReviewPanel 
+					{questions} 
+					activeReviewId={reviewSelectionId}
+					onSelectQuestion={handleReviewSelect}
+					onRevealAnswer={() => handleCommand('SHOW_CORRECT_ANSWER')}
+				/>
+			{:else}
+				<ItemPreview 
+					{selectedItem} 
+					{liveIndex} 
+					{selectedIndex} 
+					{dashboardTimer} 
+					{isPreparing} 
+					questionNumber={getQuestionNumber(selectedIndex)}
+					onPrepare={prepareQuestion}
+					onGoLive={goLive}
+					onMarkCompleted={markCompleted}
+				/>
 
-			<VideoControls 
-				{selectedItem} 
-				onAction={sendVideoAction} 
-			/>
+				<VideoControls 
+					{selectedItem} 
+					onAction={sendVideoAction} 
+				/>
+			{/if}
 		</ProductionConsole>
 
 		<UserListSidebar 
 			{connectedUsers} 
 			{totalQuestions} 
-			isQuestionLive={selectedItem.type === 'question' && liveIndex === selectedIndex} 
+			isQuestionLive={!isReviewMode && selectedItem.type === 'question' && liveIndex === selectedIndex} 
 		/>
 
 	{:else}
