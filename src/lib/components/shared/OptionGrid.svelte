@@ -10,7 +10,8 @@
 	} = $props();
 
 	function getLetter(index) {
-		return String.fromCharCode(65 + index);
+		const letters = ['Α', 'Β', 'Γ', 'Δ'];
+		return letters[index] || '';
 	}
 </script>
 
@@ -81,13 +82,14 @@
 	}
 
 	.option-letter {
-		height: 50px;
+		width: 60px;
+		height: 60px;
 		background: #2563eb;
-		border-radius: 10px;
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.75rem;
+		font-size: 2rem;
 		font-weight: 900;
 		flex-shrink: 0;
 	}
