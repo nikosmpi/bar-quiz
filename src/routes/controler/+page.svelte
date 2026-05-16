@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getSocket, joinRoom } from '$lib/socket-client';
 	
 	import IntroView from '$lib/components/game/IntroView.svelte';
@@ -24,6 +24,7 @@
 	let selectedOptionId = $state(null);
 	let userAnswers = $state(data.userAnswers || []);
 	let timerInterval;
+	let wakeLock = null;
 
 	// Check if current question is already answered
 	let isAlreadyAnswered = $derived(
@@ -42,6 +43,21 @@
 			selectedOptionId = previouslySelectedId;
 		}
 	});
+
+	async function requestWakeLock() {
+		if ('wakeLock' in navigator) {
+			try {
+				wakeLock = await navigator.wakeLock.request('screen');
+				console.log('Screen Wake Lock is active');
+				
+				wakeLock.addEventListener('release', () => {
+					console.log('Screen Wake Lock was released');
+				});
+			} catch (err) {
+				console.error(`${err.name}, ${err.message}`);
+			}
+		}
+	}
 
 	function startQuestionTimer() {
 		if (timerInterval) clearInterval(timerInterval);
@@ -80,6 +96,16 @@
 	}
 
 	onMount(() => {
+		requestWakeLock();
+
+		// Re-acquire wake lock when the page becomes visible again
+		const handleVisibilityChange = async () => {
+			if (wakeLock !== null && document.visibilityState === 'visible') {
+				await requestWakeLock();
+			}
+		};
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+
 		if (data.activeQuizId) {
 			joinRoom(data.activeQuizId, data.user);
 			
@@ -109,10 +135,15 @@
 						gameState = { type: item.type, content: item, questionNumber: 0 };
 					}
 				} else if (update.command === 'SHOW_LEADERBOARD') {
-					gameState = { type: 'leaderboard', content: null, questionNumber: 0 };
+					gameState = { type: 'leaderboard', content: update.payload, questionNumber: 0 };
 				}
 			});
 		}
+	});
+
+	onDestroy(() => {
+		if (timerInterval) clearInterval(timerInterval);
+		if (wakeLock) wakeLock.release();
 	});
 
 	async function submitAnswer(optionId) {
@@ -232,4 +263,3 @@
 	.item-title { font-weight: 700; color: #2563eb; margin-bottom: 0.5rem !important; }
 	.sub-text { color: #64748b; font-size: 1rem; }
 </style>
-
