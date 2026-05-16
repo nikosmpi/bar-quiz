@@ -6,8 +6,10 @@
 		selectedIndex = -1, 
 		liveIndex = -2, 
 		isReviewMode = false,
+		isLeaderboardMode = false,
 		onSelect = () => {},
-		onToggleReviewMode = () => {}
+		onToggleReviewMode = () => {},
+		onToggleLeaderboardMode = () => {}
 	} = $props();
 </script>
 
@@ -21,7 +23,7 @@
 	<nav class="flow-nav">
 		<button 
 			class="nav-item intro-item" 
-			class:active={selectedIndex === -1 && !isReviewMode}
+			class:active={selectedIndex === -1 && !isReviewMode && !isLeaderboardMode}
 			class:is-live={liveIndex === -1}
 			onclick={() => onSelect(-1)}
 		>
@@ -40,7 +42,7 @@
 		{#each questions as item, i}
 			<button 
 				class="nav-item" 
-				class:active={selectedIndex === i && !isReviewMode}
+				class:active={selectedIndex === i && !isReviewMode && !isLeaderboardMode}
 				class:is-live={liveIndex === i}
 				class:completed={item.status === 'completed'}
 				onclick={() => onSelect(i)}
@@ -81,6 +83,20 @@
 				</div>
 			</div>
 		</button>
+
+		<button 
+			class="nav-item leaderboard-item" 
+			class:active={isLeaderboardMode}
+			onclick={onToggleLeaderboardMode}
+		>
+			<span class="type-icon">🏆</span>
+			<div class="item-meta">
+				<span class="label">Κατάταξη</span>
+				<div class="sub-meta">
+					<span class="type-text">Leaderboard</span>
+				</div>
+			</div>
+		</button>
 	</nav>
 </aside>
 
@@ -109,6 +125,9 @@
 
 	.review-item.active { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 	.review-item.active .type-text { color: #b45309; }
+
+	.leaderboard-item.active { background: #dcfce7; border-color: #86efac; color: #166534; }
+	.leaderboard-item.active .type-text { color: #15803d; }
 
 	@media (max-width: 1400px) {
 		.sidebar { width: 260px; }

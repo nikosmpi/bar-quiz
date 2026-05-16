@@ -10,6 +10,7 @@
 	import ItemPreview from '$lib/components/game-control/ItemPreview.svelte';
 	import VideoControls from '$lib/components/game-control/VideoControls.svelte';
 	import ReviewPanel from '$lib/components/game-control/ReviewPanel.svelte';
+	import LeaderboardPanel from '$lib/components/game-control/LeaderboardPanel.svelte';
 
 	let { data } = $props();
 
@@ -18,6 +19,7 @@
 	let liveIndex = $state(-2); // Tracks what is currently live on Display
 	let isPreparing = $state(false); // Tracks if we are in preparation mode for a question
 	let isReviewMode = $state(false);
+	let isLeaderboardMode = $state(false);
 	let reviewSelectionId = $state(null);
 	
 	let connectedUsers = $state([]); // Real-time users list
@@ -83,6 +85,7 @@
 				liveIndex = -2;
 				isPreparing = false;
 				isReviewMode = false;
+				isLeaderboardMode = false;
 				if (timerInterval) clearInterval(timerInterval);
 				dashboardTimer = 0;
 				
@@ -185,6 +188,16 @@
 		});
 	}
 
+	function toggleLeaderboardMode() {
+		isLeaderboardMode = !isLeaderboardMode;
+		if (isLeaderboardMode) isReviewMode = false;
+	}
+
+	function toggleReviewMode() {
+		isReviewMode = !isReviewMode;
+		if (isReviewMode) isLeaderboardMode = false;
+	}
+
 	// Reset preparation state when selection changes
 	$effect(() => {
 		if (selectedIndex !== liveIndex) {
@@ -200,17 +213,24 @@
 			{selectedIndex} 
 			{liveIndex} 
 			{isReviewMode}
-			onSelect={(i) => { selectedIndex = i; isReviewMode = false; }} 
-			onToggleReviewMode={() => isReviewMode = !isReviewMode}
+			{isLeaderboardMode}
+			onSelect={(i) => { selectedIndex = i; isReviewMode = false; isLeaderboardMode = false; }} 
+			onToggleReviewMode={toggleReviewMode}
+			onToggleLeaderboardMode={toggleLeaderboardMode}
 		/>
 
 		<ProductionConsole 
 			activeQuiz={data.activeQuiz} 
 			activeQuizId={data.activeQuizId} 
-			onShowLeaderboard={() => handleCommand('SHOW_LEADERBOARD')} 
+			onShowLeaderboard={toggleLeaderboardMode} 
 			onResetGame={resetGame}
 		>
-			{#if isReviewMode}
+			{#if isLeaderboardMode}
+				<LeaderboardPanel 
+					quizId={data.activeQuizId}
+					onCommand={handleCommand}
+				/>
+			{:else if isReviewMode}
 				<ReviewPanel 
 					{questions} 
 					activeReviewId={reviewSelectionId}
@@ -240,7 +260,7 @@
 		<UserListSidebar 
 			{connectedUsers} 
 			{totalQuestions} 
-			isQuestionLive={!isReviewMode && selectedItem.type === 'question' && liveIndex === selectedIndex} 
+			isQuestionLive={!isReviewMode && !isLeaderboardMode && selectedItem.type === 'question' && liveIndex === selectedIndex} 
 		/>
 
 	{:else}
@@ -262,4 +282,3 @@
 	.no-quiz-state { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; }
 	.warn-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
 </style>
-

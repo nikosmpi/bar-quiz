@@ -86,7 +86,7 @@
 						gameState = { type: item.type, content: item, questionNumber: 0 };
 					}
 				} else if (update.command === 'SHOW_LEADERBOARD') {
-					gameState = { type: 'leaderboard', content: null, questionNumber: 0 };
+					gameState = { type: 'leaderboard', content: update.payload, questionNumber: 0 };
 				} else if (update.command === 'SHOW_CORRECT_ANSWER') {
 					showCorrect = true;
 				} else if (update.command === 'VIDEO_CONTROL') {
