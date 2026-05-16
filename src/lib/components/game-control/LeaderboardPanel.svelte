@@ -77,7 +77,7 @@
 				{#each leaderboard as player, i}
 					<div class="player-row" class:revealed={i <= revealedIndex}>
 						<span class="rank">{leaderboard.length - i}ος</span>
-						<UserAvatar user={{ name: player.name, username: player.username }} size="sm" />
+						<UserAvatar user={{ name: player.name, username: player.username, image: player.image }} size="sm" />
 						<div class="player-info">
 							<span class="name">{player.username || player.name}</span>
 						</div>

@@ -16,6 +16,7 @@ export const GET = async ({ url }) => {
 			userId: answer.userId,
 			username: user.username,
 			name: user.name,
+			image: user.image,
 			totalPoints: totalPointsExpr
 		})
 		.from(answer)

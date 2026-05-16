@@ -31,7 +31,7 @@
 							<div class="rank-badge">
 								{revealedPlayers.length - i}
 							</div>
-							<UserAvatar user={{ name: player.name, username: player.username }} size="md" />
+							<UserAvatar user={{ name: player.name, username: player.username, image: player.image }} size="md" />
 							<div class="player-info">
 								<span class="player-name">{player.username || player.name}</span>
 							</div>
