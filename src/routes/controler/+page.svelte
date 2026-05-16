@@ -9,11 +9,12 @@
 	import QuestionView from '$lib/components/game/QuestionView.svelte';
 	import TimesUpView from '$lib/components/game/TimesUpView.svelte';
 	import LeaderboardView from '$lib/components/game/LeaderboardView.svelte';
+	import Card from '$lib/components/Card.svelte';
 
 	let { data } = $props();
 	
 	let gameState = $state({
-		type: 'intro', // 'intro', 'card', 'question', 'leaderboard', 'prep', 'countdown', 'timesup'
+		type: 'intro', // 'intro', 'card', 'question', 'leaderboard', 'prep', 'countdown', 'timesup', 'review'
 		content: null,
 		questionNumber: 0
 	});
@@ -97,7 +98,12 @@
 					gameState = { type: 'prep', content: q, questionNumber: update.payload.number };
 				} else if (update.command === 'SHOW_CONTENT') {
 					const item = update.payload.item || data.questions[update.payload.index];
-					if (item.type === 'question') {
+					const isReview = update.payload.isReview || false;
+
+					if (isReview) {
+						if (timerInterval) clearInterval(timerInterval);
+						gameState = { type: 'review', content: item, questionNumber: 0 };
+					} else if (item.type === 'question') {
 						startCountdown(item);
 					} else {
 						gameState = { type: item.type, content: item, questionNumber: 0 };
@@ -170,6 +176,17 @@
 				{isAlreadyAnswered}
 				onSelect={submitAnswer}
 			/>
+		{:else if gameState.type === 'review'}
+			<div class="attention-screen">
+				<Card>
+					<div class="attention-content">
+						<span class="status-icon pulse">💡</span>
+						<h3>Ανασκόπηση Απαντήσεων</h3>
+						<p class="item-title">"{gameState.content?.text}"</p>
+						<p class="sub-text">Δείτε τη σωστή απάντηση στην κεντρική οθόνη!</p>
+					</div>
+				</Card>
+			</div>
 		{:else if gameState.type === 'timesup'}
 			<TimesUpView mode="controller" hasAnswered={selectedOptionId || isAlreadyAnswered} />
 		{:else if gameState.type === 'leaderboard'}
@@ -200,5 +217,19 @@
 	.user-info { margin: 0.2rem 0 0; color: #64748b; font-size: 0.8rem; }
 
 	.game-area { flex: 1; display: flex; flex-direction: column; margin-top: 1rem; }
+
+	.attention-content {
+		text-align: center;
+		padding: 2.5rem 1rem;
+	}
+
+	.status-icon { font-size: 4rem; display: block; margin-bottom: 1.5rem; }
+	.status-icon.pulse { animation: pulse 2s infinite; }
+
+	@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
+
+	h3 { color: #1e293b; margin: 0 0 1rem; font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+	.item-title { font-weight: 700; color: #2563eb; margin-bottom: 0.5rem !important; }
+	.sub-text { color: #64748b; font-size: 1rem; }
 </style>
 

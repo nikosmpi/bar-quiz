@@ -81,7 +81,6 @@
 	}
 
 	.option-letter {
-...
 		height: 50px;
 		background: #2563eb;
 		border-radius: 10px;
