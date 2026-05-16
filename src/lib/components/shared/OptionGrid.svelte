@@ -43,7 +43,7 @@
 <style>
 	.options-grid {
 		display: grid;
-		gap: 1.5rem;
+		gap: 1rem;
 		width: 100%;
 	}
 
@@ -59,11 +59,11 @@
 	.option-card, .option-btn {
 		background: #1f2937;
 		border: 3px solid #374151;
-		border-radius: 16px;
-		padding: 1.25rem;
+		border-radius: 14px;
+		padding: 1rem;
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
+		gap: 1rem;
 		color: white;
 		text-align: left;
 		transition: all 0.2s;
@@ -82,20 +82,20 @@
 	}
 
 	.option-letter {
-		width: 60px;
-		height: 60px;
+		width: 50px;
+		height: 50px;
 		background: #2563eb;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 2rem;
+		font-size: 1.6rem;
 		font-weight: 900;
 		flex-shrink: 0;
 	}
 
 	.option-text {
-		font-size: 1.5rem;
+		font-size: 1.3rem;
 		font-weight: 600;
 		white-space: nowrap;
 		overflow: hidden;
@@ -110,17 +110,17 @@
 		border: 3px solid transparent;
 		background: white;
 		color: #1e293b;
-		padding: 1rem;
+		padding: 0.8rem;
 	}
 
 	.option-btn .option-letter {
-		width: 45px;
-		height: 45px;
-		font-size: 1.4rem;
+		width: 40px;
+		height: 40px;
+		font-size: 1.3rem;
 	}
 
 	.option-btn .option-text {
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 700;
 	}
 
@@ -133,10 +133,10 @@
 	.color-2 .option-letter { background: #10b981; }
 	.color-3 .option-letter { background: #f59e0b; }
 
-	.check-icon { font-size: 1.5rem; color: #10b981; font-weight: bold; margin-left: auto; }
+	.check-icon { font-size: 1.4rem; color: #10b981; font-weight: bold; margin-left: auto; }
 
 	@media (max-width: 1200px) {
-		.mode-display .option-text { font-size: 1.2rem; }
-		.mode-display .option-letter { width: 40px; height: 40px; font-size: 1.4rem; }
+		.mode-display .option-text { font-size: 1.1rem; }
+		.mode-display .option-letter { width: 36px; height: 36px; font-size: 1.2rem; }
 	}
 </style>

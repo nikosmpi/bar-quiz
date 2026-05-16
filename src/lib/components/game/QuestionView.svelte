@@ -12,26 +12,48 @@
 		isAlreadyAnswered = false,
 		onSelect = () => {}
 	} = $props();
+
+	let hasMedia = $derived(content?.mediaUrl);
+	let isMediaTemplate = $derived(content?.template === 'question_media');
 </script>
 
 {#if mode === 'display'}
-	<div class="question-view-display">
+	<div class="question-view-display template-{content?.template || 'standard'}" class:has-media={hasMedia}>
 		<TimerBadge value={questionTimer} class="absolute-timer" />
 		
-		<div class="question-header">
-			<h1>{content?.text}</h1>
-			{#if content?.explanation}
-				<p class="explanation">{content.explanation}</p>
-			{/if}
-		</div>
-		
-		<div class="media-container">
-			{#if content?.mediaUrl}
-				<MediaPreview url={content.mediaUrl} type={content.mediaType} class="question-media-preview" />
-			{/if}
-		</div>
+		{#if isMediaTemplate && hasMedia}
+			<div class="split-layout">
+				<div class="media-side">
+					<MediaPreview url={content.mediaUrl} type={content.mediaType} class="question-media-preview" />
+				</div>
+				<div class="content-side">
+					<div class="question-header">
+						<h1>{content?.text}</h1>
+						{#if content?.explanation}
+							<p class="explanation">{content.explanation}</p>
+						{/if}
+					</div>
+					<OptionGrid options={content?.options || []} mode="display" {showCorrect} />
+				</div>
+			</div>
+		{:else}
+			<div class="standard-layout">
+				<div class="question-header">
+					<h1>{content?.text}</h1>
+					{#if content?.explanation}
+						<p class="explanation">{content.explanation}</p>
+					{/if}
+				</div>
+				
+				{#if hasMedia}
+					<div class="media-container">
+						<MediaPreview url={content.mediaUrl} type={content.mediaType} class="question-media-preview" />
+					</div>
+				{/if}
 
-		<OptionGrid options={content?.options || []} mode="display" {showCorrect} />
+				<OptionGrid options={content?.options || []} mode="display" {showCorrect} />
+			</div>
+		{/if}
 	</div>
 {:else}
 	<div class="question-view-controller">
@@ -63,32 +85,66 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		padding: 2rem 4rem;
-		gap: 1.5rem;
 		height: 100%;
-		justify-content: space-between;
 		box-sizing: border-box;
 		position: relative;
+		overflow: hidden;
+	}
+
+	.standard-layout {
+		display: flex;
+		flex-direction: column;
+		padding: 1.5rem 3rem;
+		gap: 1rem;
+		height: 100%;
+		justify-content: space-between;
+	}
+
+	.split-layout {
+		display: grid;
+		grid-template-columns: 0.8fr 1.2fr;
+		height: 100%;
+	}
+
+	.media-side {
+		background: rgba(0,0,0,0.2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem;
+		min-height: 0;
+	}
+
+	.content-side {
+		display: flex;
+		flex-direction: column;
+		padding: 2rem;
+		gap: 1.5rem;
+		justify-content: center;
+		background: rgba(255,255,255,0.03);
 	}
 
 	:global(.absolute-timer) {
 		position: absolute;
-		top: 2rem;
-		right: 2rem;
+		top: 1.5rem;
+		right: 1.5rem;
 		z-index: 1000;
 	}
 
 	.question-header {
 		text-align: center;
-		padding-right: 180px; /* Clear the absolute timer */
-		min-height: 100px;
+		min-height: 80px;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 	}
 
-	.question-header h1 { font-size: 3rem; line-height: 1.2; margin: 0; font-weight: 800; }
-	.question-header .explanation { font-size: 1.5rem; color: #9ca3af; margin: 0.5rem 0 0; }
+	.standard-layout .question-header {
+		padding-right: 140px; /* Clear the absolute timer */
+	}
+
+	.question-header h1 { font-size: 2.2rem; line-height: 1.2; margin: 0; font-weight: 800; }
+	.question-header .explanation { font-size: 1.2rem; color: #9ca3af; margin: 0.4rem 0 0; }
 
 	.media-container {
 		flex: 1;
@@ -96,13 +152,20 @@
 		justify-content: center;
 		align-items: center;
 		min-height: 0;
-		padding: 1rem 0;
+		padding: 0.5rem 0;
 	}
 
 	:global(.question-media-preview) {
 		max-height: 100% !important;
 		width: auto !important;
+		max-width: 100% !important;
 		object-fit: contain;
+		border-radius: 12px;
+		box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.3);
+	}
+
+	.split-layout :global(.question-media-preview) {
+		max-height: 70vh !important;
 	}
 
 	/* Controller Styles */
@@ -129,7 +192,10 @@
 	.answer-feedback p { color: #166534; font-weight: 700; margin: 0; }
 
 	@media (max-width: 1200px) {
-		.question-header { padding-right: 0; padding-top: 6rem; }
+		.standard-layout .question-header { padding-right: 0; padding-top: 6rem; }
 		.question-header h1 { font-size: 2rem; }
+		.split-layout { grid-template-columns: 1fr; }
+		.media-side { padding: 1rem; height: 40vh; }
+		.content-side { padding: 1.5rem; }
 	}
 </style>

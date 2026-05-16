@@ -26,12 +26,14 @@
 	// Visibility logic based on template
 	let showExplanation = $derived(
 		qTemplate === 'question_standard' || 
+		qTemplate === 'question_media' || 
 		qTemplate === 'card_title_text' || 
 		qTemplate === 'card_split_media'
 	);
 	
 	let showMedia = $derived(
 		qTemplate === 'question_standard' || 
+		qTemplate === 'question_media' || 
 		qTemplate === 'card_full_media' || 
 		qTemplate === 'card_split_media'
 	);
@@ -69,7 +71,8 @@
 	];
 
 	const questionTemplates = [
-		{ id: 'question_standard', label: 'Standard Ερώτηση', icon: '❓' }
+		{ id: 'question_standard', label: 'Standard Ερώτηση', icon: '❓' },
+		{ id: 'question_media', label: 'Ερώτηση με Media', icon: '🖼️' }
 	];
 
 	let availableTemplates = $derived(isCard ? cardTemplates : questionTemplates);
