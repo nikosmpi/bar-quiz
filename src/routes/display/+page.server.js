@@ -9,10 +9,6 @@ export const load = async ({ request, url }) => {
 		headers: request.headers
 	});
 
-	if (!session || (session.user.role !== 'admin' && session.user.role !== 'quizmaster')) {
-		throw redirect(302, '/login');
-	}
-
 	const activeQuizConfig = await db.select().from(config).where(eq(config.key, 'active_quiz_id')).get();
 	const activeQuizId = activeQuizConfig?.value || null;
 
@@ -37,7 +33,7 @@ export const load = async ({ request, url }) => {
 	}
 
 	return {
-		user: session.user,
+		user: session?.user || null,
 		activeQuizId,
 		activeQuiz,
 		questions,
