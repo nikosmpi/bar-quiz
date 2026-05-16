@@ -4,12 +4,22 @@ import { Server } from 'socket.io';
  * Core WebSocket logic shared between Dev (Vite) and Prod (Node)
  */
 export async function injectWebSockets(httpServer) {
+	console.log('[Socket] Initializing WebSocket server...');
 	// Move DB imports inside to avoid Vite config loading issues ($env not available in vite.config)
 	const { db } = await import('./db/index.js');
 	const { answer } = await import('./db/schema.js');
 	const { eq, and, sql } = await import('drizzle-orm');
 
-	const io = new Server(httpServer);
+	// Read trusted origins from env
+	const trustedOrigins = (process.env.TRUSTED_ORIGINS || '').split(',').filter(Boolean);
+	
+	const io = new Server(httpServer, {
+		cors: {
+			origin: trustedOrigins.length > 0 ? trustedOrigins : "*",
+			methods: ["GET", "POST"],
+			credentials: true
+		}
+	});
 
 	// Map to store user data per room
 	// roomId -> Map(socketId -> { userData, answerCount, answeredCurrent })
