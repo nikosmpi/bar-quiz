@@ -222,7 +222,6 @@
 		<ProductionConsole 
 			activeQuiz={data.activeQuiz} 
 			activeQuizId={data.activeQuizId} 
-			onShowLeaderboard={toggleLeaderboardMode} 
 			onResetGame={resetGame}
 		>
 			{#if isLeaderboardMode}

@@ -4,7 +4,6 @@
 	let { 
 		activeQuiz = null, 
 		activeQuizId = "", 
-		onShowLeaderboard = () => {}, 
 		onResetGame = () => {},
 		children
 	} = $props();
@@ -17,7 +16,6 @@
 			<p class="quiz-id">Production Console • ID: {activeQuizId}</p>
 		</div>
 		<div class="header-actions">
-			<Button onclick={onShowLeaderboard} variant="secondary">📊 Leaderboard</Button>
 			<Button onclick={onResetGame} variant="danger">🔄 Reset</Button>
 		</div>
 	</header>
