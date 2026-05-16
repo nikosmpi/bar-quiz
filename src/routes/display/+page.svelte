@@ -159,7 +159,7 @@
 	{:else if gameState.type === 'timesup'}
 		<TimesUpView mode="display" />
 	{:else if gameState.type === 'leaderboard'}
-		<LeaderboardView mode="display" />
+		<LeaderboardView mode="display" content={gameState.content} />
 	{/if}
 </div>
 
