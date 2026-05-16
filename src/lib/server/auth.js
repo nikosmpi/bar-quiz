@@ -72,6 +72,7 @@ export const auth = betterAuth({
 	plugins: [
 		emailOTP({
 			async sendVerificationOTP({ email, otp, type }) {
+				console.log('Attempting to send OTP to:', email);
 				console.log('Using Brevo API Key:', env.BREVO_API_KEY ? 'Present' : 'Missing');
 				const response = await fetch('https://api.brevo.com/v3/smtp/email', {
 					method: 'POST',
@@ -91,10 +92,13 @@ export const auth = betterAuth({
 					})
 				});
 
+				console.log('Brevo response status:', response.status);
 				if (!response.ok) {
 					const error = await response.json();
 					console.error('Brevo error:', error);
 					throw new Error('Αποτυχία αποστολής OTP μέσω Brevo');
+				} else {
+					console.log('OTP sent successfully via Brevo');
 				}
 			}
 		})

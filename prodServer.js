@@ -2,11 +2,15 @@ import http from 'http';
 import { handler } from './build/handler.js';
 import { injectWebSockets } from './src/lib/server/socket-handler.js';
 
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+
 console.log('*** PROD SERVER STARTING ***');
 console.log('Environment:', {
     PORT: process.env.PORT,
     NODE_ENV: process.env.NODE_ENV,
-    TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS
+    TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS,
+    BREVO_API_KEY: process.env.BREVO_API_KEY ? 'Present' : 'Missing',
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL
 });
 
 const server = http.createServer(async (req, res) => {
